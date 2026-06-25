@@ -1,0 +1,2679 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aurum ERP — Sistema de Gestión Minera</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C96A;
+    --gold-dim: #7A6228;
+    --bg-deep: #0A0A0B;
+    --bg-panel: #13131A;
+    --bg-card: #1A1A24;
+    --bg-hover: #22222E;
+    --border: #2A2A38;
+    --border-gold: rgba(201,168,76,0.3);
+    --text-primary: #F0EDE8;
+    --text-secondary: #8A8A9A;
+    --text-dim: #4A4A5A;
+    --green: #3DAA6E;
+    --red: #D45454;
+    --blue: #4A7CC7;
+    --emerald: #2D6B5A;
+    --silver: #A8B0C0;
+    --platinum: #D8DCE8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: 240px;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    z-index: 100;
+    transition: width 0.3s ease;
+  }
+  .sidebar.collapsed { width: 64px; }
+
+  .logo-area {
+    padding: 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; min-width: 36px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { overflow: hidden; white-space: nowrap; }
+  .logo-text h1 { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: var(--gold); }
+  .logo-text span { font-size: 10px; color: var(--text-secondary); letter-spacing: 2px; text-transform: uppercase; }
+
+  .nav-section { padding: 16px 0; flex: 1; overflow-y: auto; }
+  .nav-label {
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--text-dim); padding: 8px 16px; overflow: hidden; white-space: nowrap;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; cursor: pointer;
+    color: var(--text-secondary);
+    border-left: 2px solid transparent;
+    transition: all 0.15s ease;
+    white-space: nowrap; overflow: hidden;
+    position: relative;
+  }
+  .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .nav-item.active { background: rgba(201,168,76,0.08); color: var(--gold); border-left-color: var(--gold); }
+  .nav-item .nav-icon { font-size: 16px; min-width: 20px; text-align: center; }
+  .nav-item .nav-text { font-size: 13px; font-weight: 500; }
+  .nav-badge {
+    margin-left: auto; background: var(--red); color: white;
+    font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 10px;
+    min-width: 18px; text-align: center;
+  }
+
+  .sidebar-footer {
+    padding: 16px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .user-avatar {
+    width: 32px; height: 32px; min-width: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-dim), var(--emerald));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .user-info { overflow: hidden; white-space: nowrap; }
+  .user-info .name { font-size: 12px; font-weight: 600; }
+  .user-info .role { font-size: 10px; color: var(--text-secondary); }
+
+  .collapse-btn {
+    margin-left: auto; cursor: pointer; color: var(--text-dim);
+    font-size: 14px; padding: 4px; border-radius: 4px;
+    transition: color 0.15s;
+  }
+  .collapse-btn:hover { color: var(--text-primary); }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 240px;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+    display: flex; flex-direction: column;
+  }
+  .main.shifted { margin-left: 64px; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    height: 56px; background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 24px; gap: 16px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-title { font-size: 15px; font-weight: 600; flex: 1; }
+  .topbar-subtitle { font-size: 11px; color: var(--text-secondary); display: block; font-weight: 400; }
+
+  .ticker-strip {
+    display: flex; gap: 20px; overflow: hidden;
+    font-size: 11px; font-family: 'Space Grotesk', monospace;
+  }
+  .ticker-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .ticker-symbol { color: var(--gold); font-weight: 700; }
+  .ticker-price { color: var(--text-primary); font-weight: 600; }
+  .ticker-change.up { color: var(--green); }
+  .ticker-change.down { color: var(--red); }
+
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px; color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+  .icon-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── CONTENT ── */
+  .content { padding: 24px; flex: 1; }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px;
+    transition: border-color 0.15s;
+    cursor: default;
+  }
+  .kpi-card:hover { border-color: var(--border-gold); }
+  .kpi-card.highlight { border-color: var(--border-gold); background: rgba(201,168,76,0.04); }
+  .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .kpi-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+  .kpi-icon { font-size: 18px; opacity: 0.8; }
+  .kpi-value { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; line-height: 1; }
+  .kpi-value.gold { color: var(--gold); }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.blue { color: var(--blue); }
+  .kpi-meta { margin-top: 8px; font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+  .kpi-meta .up { color: var(--green); }
+  .kpi-meta .down { color: var(--red); }
+
+  /* ── GRID LAYOUT ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .panel {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .panel-header {
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .panel-title .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
+  }
+  .panel-actions { display: flex; gap: 8px; }
+  .btn-sm {
+    font-size: 11px; font-weight: 600; padding: 4px 10px;
+    border-radius: 5px; cursor: pointer; border: 1px solid var(--border);
+    background: transparent; color: var(--text-secondary);
+    transition: all 0.15s; font-family: inherit;
+  }
+  .btn-sm:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
+  .btn-sm.primary { background: var(--gold); color: var(--bg-deep); border-color: var(--gold); }
+  .btn-sm.primary:hover { background: var(--gold-light); border-color: var(--gold-light); }
+
+  /* ── TABLE ── */
+  .data-table { width: 100%; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 10px 18px; text-align: left;
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-dim);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid rgba(42,42,56,0.5); }
+  tbody tr:hover { background: var(--bg-hover); }
+  tbody td { padding: 10px 18px; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+  tbody td.primary { color: var(--text-primary); font-weight: 500; }
+  tbody td.gold { color: var(--gold); font-family: 'Space Grotesk', monospace; font-weight: 600; }
+  tbody td.green { color: var(--green); }
+  tbody td.red { color: var(--red); }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge.green { background: rgba(61,170,110,0.15); color: var(--green); }
+  .badge.gold { background: rgba(201,168,76,0.15); color: var(--gold); }
+  .badge.red { background: rgba(212,84,84,0.15); color: var(--red); }
+  .badge.blue { background: rgba(74,124,199,0.15); color: var(--blue); }
+  .badge.gray { background: rgba(138,138,154,0.15); color: var(--text-secondary); }
+  .badge::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+
+  /* ── MINI CHART ── */
+  .sparkline { padding: 0 18px 14px; }
+  canvas.spark { width: 100%; height: 60px; }
+
+  /* ── MATERIAL CARDS ── */
+  .material-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px;
+  }
+  .material-card {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .material-card:hover { border-color: var(--border-gold); transform: translateY(-1px); }
+  .mat-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .mat-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .mat-name { font-size: 12px; font-weight: 600; }
+  .mat-type { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .mat-price { font-family: 'Space Grotesk', monospace; font-size: 14px; font-weight: 700; color: var(--gold); }
+  .mat-unit { font-size: 10px; color: var(--text-secondary); }
+  .mat-stock { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* ── PROCESO PIPELINE ── */
+  .pipeline { padding: 14px 18px; }
+  .pipeline-steps { display: flex; gap: 0; }
+  .pipe-step {
+    flex: 1; text-align: center; position: relative; cursor: pointer;
+  }
+  .pipe-step::after {
+    content: ''; position: absolute; top: 15px; left: 50%; right: -50%;
+    height: 2px; background: var(--border);
+  }
+  .pipe-step:last-child::after { display: none; }
+  .pipe-step.done::after { background: var(--gold-dim); }
+  .pipe-dot {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--bg-panel); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 6px; font-size: 12px; position: relative; z-index: 1;
+    transition: all 0.15s;
+  }
+  .pipe-step.done .pipe-dot { border-color: var(--gold); background: rgba(201,168,76,0.15); color: var(--gold); }
+  .pipe-step.active .pipe-dot { border-color: var(--gold); background: var(--gold); color: var(--bg-deep); }
+  .pipe-step.pending .pipe-dot { border-color: var(--border); color: var(--text-dim); }
+  .pipe-label { font-size: 10px; color: var(--text-secondary); font-weight: 500; }
+  .pipe-step.active .pipe-label { color: var(--gold); }
+  .pipe-step.done .pipe-label { color: var(--text-primary); }
+  .pipe-count { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ── ALERT BOX ── */
+  .alert-list { padding: 8px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .alert-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; border-radius: 8px; border: 1px solid;
+    font-size: 12px;
+  }
+  .alert-item.warn { background: rgba(212,84,84,0.06); border-color: rgba(212,84,84,0.2); }
+  .alert-item.info { background: rgba(74,124,199,0.06); border-color: rgba(74,124,199,0.2); }
+  .alert-item.ok { background: rgba(61,170,110,0.06); border-color: rgba(61,170,110,0.2); }
+  .alert-icon { font-size: 14px; margin-top: 1px; }
+  .alert-text { flex: 1; }
+  .alert-title { font-weight: 600; margin-bottom: 2px; }
+  .alert-desc { color: var(--text-secondary); line-height: 1.4; }
+  .alert-time { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+
+  /* ── TABS ── */
+  .tab-bar {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    padding: 0 18px;
+  }
+  .tab {
+    padding: 10px 14px; font-size: 12px; font-weight: 500;
+    color: var(--text-secondary); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab:hover:not(.active) { color: var(--text-primary); }
+
+  /* ── MAPA / UBICACIONES ── */
+  .location-list { padding: 8px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .location-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 8px;
+    background: var(--bg-panel); border: 1px solid var(--border);
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .location-item:hover { border-color: var(--border-gold); }
+  .loc-icon { font-size: 18px; }
+  .loc-info { flex: 1; }
+  .loc-name { font-size: 12px; font-weight: 600; }
+  .loc-detail { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+  .loc-stat { text-align: right; }
+  .loc-value { font-family: 'Space Grotesk', monospace; font-size: 13px; font-weight: 700; color: var(--gold); }
+  .loc-unit { font-size: 10px; color: var(--text-secondary); }
+
+  /* ── FORM CONTROLS ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; display: block; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-input, .form-select {
+    width: 100%; padding: 8px 12px;
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 13px;
+    transition: border-color 0.15s; outline: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--gold); }
+  .form-select option { background: var(--bg-panel); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── MODAL OVERLAY ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 200; display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-card); border: 1px solid var(--border-gold);
+    border-radius: 12px; width: 520px; max-width: 95vw; max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    padding: 18px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .modal-close { cursor: pointer; color: var(--text-secondary); font-size: 18px; transition: color 0.15s; }
+  .modal-close:hover { color: var(--text-primary); }
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+  /* ── BTN FULL ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 7px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid; transition: all 0.15s; font-family: inherit;
+  }
+  .btn.primary { background: var(--gold); color: var(--bg-deep); border-color: var(--gold); }
+  .btn.primary:hover { background: var(--gold-light); }
+  .btn.secondary { background: transparent; color: var(--text-secondary); border-color: var(--border); }
+  .btn.secondary:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+
+  /* ── PAGE SECTIONS ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+  /* ── QUICK STATS ROW ── */
+  .quick-stats { display: flex; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .qs-item { text-align: center; flex: 1; }
+  .qs-value { font-family: 'Space Grotesk', monospace; font-size: 18px; font-weight: 700; }
+  .qs-label { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 1200px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .material-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .sidebar { width: 64px; }
+    .logo-text, .nav-text, .nav-label, .user-info { display: none; }
+    .main { margin-left: 64px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* Animated gold shimmer */
+  @keyframes shimmer {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); animation: shimmer 1.5s infinite;
+    display: inline-block; margin-right: 4px;
+  }
+
+  /* ── ROW CLICKABLE (proveedores / clientes → ficha) ── */
+  tbody tr.clickable { cursor: pointer; }
+  tbody tr.clickable:hover td { color: var(--text-primary); }
+
+  /* ── DRAWER (panel lateral de ficha de detalle) ── */
+  .drawer-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 250; display: none; backdrop-filter: blur(2px);
+  }
+  .drawer-overlay.open { display: block; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 460px; max-width: 92vw;
+    background: var(--bg-card); border-left: 1px solid var(--border-gold);
+    z-index: 251; transform: translateX(100%);
+    transition: transform 0.25s ease; overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  .drawer-overlay.open .drawer { transform: translateX(0); }
+  .drawer-head {
+    padding: 22px 22px 18px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(201,168,76,0.06), transparent);
+  }
+  .drawer-close {
+    position: absolute; top: 18px; right: 18px; cursor: pointer;
+    color: var(--text-secondary); font-size: 18px; transition: color 0.15s;
+  }
+  .drawer-close:hover { color: var(--text-primary); }
+  .drawer-avatar {
+    width: 52px; height: 52px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: var(--bg-deep);
+    margin-bottom: 12px;
+  }
+  .drawer-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .drawer-sub { font-size: 12px; color: var(--text-secondary); }
+  .drawer-badges { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .drawer-body { padding: 18px 22px; flex: 1; }
+  .drawer-section { margin-bottom: 22px; }
+  .drawer-section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); margin-bottom: 10px; font-weight: 600;
+  }
+  .drawer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .drawer-stat {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .drawer-stat-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .drawer-stat-value { font-family: 'Space Grotesk', monospace; font-size: 16px; font-weight: 700; margin-top: 4px; }
+  .drawer-info-row {
+    display: flex; justify-content: space-between; padding: 7px 0;
+    border-bottom: 1px solid rgba(42,42,56,0.5); font-size: 12px;
+  }
+  .drawer-info-row span:first-child { color: var(--text-secondary); }
+  .drawer-info-row span:last-child { color: var(--text-primary); font-weight: 500; text-align: right; }
+  .drawer-timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
+  .tl-item::before {
+    content: ''; position: absolute; left: 5px; top: 16px; bottom: 0;
+    width: 1px; background: var(--border);
+  }
+  .tl-item:last-child::before { display: none; }
+  .tl-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--gold); margin-top: 2px; min-width: 11px; z-index: 1; }
+  .tl-dot.gray { background: var(--text-dim); }
+  .tl-content { flex: 1; }
+  .tl-title { font-size: 12px; font-weight: 600; }
+  .tl-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .tl-date { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+  .drawer-footer {
+    padding: 16px 22px; border-top: 1px solid var(--border);
+    display: flex; gap: 10px;
+  }
+
+  /* ── CONTABILIDAD: asientos / libro mayor ── */
+  .ledger-entry {
+    display: grid; grid-template-columns: 90px 1fr 110px 110px;
+    gap: 12px; padding: 10px 18px; font-size: 12px;
+    border-bottom: 1px solid rgba(42,42,56,0.5); align-items: center;
+  }
+  .ledger-entry.head {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); font-weight: 600; border-bottom: 1px solid var(--border);
+  }
+  .ledger-date { color: var(--text-secondary); font-family: 'Space Grotesk', monospace; font-size: 11px; }
+  .ledger-desc .ledger-account { color: var(--text-primary); font-weight: 500; }
+  .ledger-desc .ledger-sub { color: var(--text-dim); font-size: 11px; }
+  .ledger-debit { text-align: right; font-family: 'Space Grotesk', monospace; }
+  .ledger-credit { text-align: right; font-family: 'Space Grotesk', monospace; color: var(--text-secondary); }
+
+  .balance-row {
+    display: flex; justify-content: space-between; padding: 9px 0;
+    border-bottom: 1px solid rgba(42,42,56,0.5); font-size: 12px;
+  }
+  .balance-row.total { border-bottom: none; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 12px; font-weight: 700; }
+  .balance-row .label { color: var(--text-secondary); }
+  .balance-row.total .label { color: var(--text-primary); }
+  .balance-row .val { font-family: 'Space Grotesk', monospace; font-weight: 600; }
+  .balance-section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--gold); margin: 16px 0 8px; font-weight: 700;
+  }
+  .balance-section-title:first-child { margin-top: 0; }
+
+  /* ── REPORTE: vista previa ── */
+  .report-preview {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 28px; margin-top: 16px;
+  }
+  .report-preview-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 2px solid var(--gold); padding-bottom: 16px; margin-bottom: 20px;
+  }
+  .report-brand { display: flex; align-items: center; gap: 10px; }
+  .report-brand-icon {
+    width: 38px; height: 38px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .report-title-block h2 { font-size: 16px; font-weight: 700; }
+  .report-title-block span { font-size: 11px; color: var(--text-secondary); }
+  .report-meta { text-align: right; font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+  .report-meta strong { color: var(--text-primary); }
+
+  /* ── BRANDING / PERSONALIZACIÓN ── */
+  .brand-preview-card {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .brand-preview-logo {
+    width: 48px; height: 48px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; flex-shrink: 0;
+  }
+  .brand-preview-text h3 { font-size: 15px; font-weight: 700; }
+  .brand-preview-text span { font-size: 11px; color: var(--text-secondary); }
+
+  .color-input-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid rgba(42,42,56,0.5);
+  }
+  .color-input-row label { flex: 1; font-size: 12px; color: var(--text-secondary); }
+  .color-swatch-wrap { display: flex; align-items: center; gap: 8px; }
+  .color-swatch {
+    width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border);
+    cursor: pointer; padding: 0; background: none; overflow: hidden;
+  }
+  .color-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-swatch::-webkit-color-swatch { border: none; border-radius: 6px; }
+  .color-hex { font-family: 'Space Grotesk', monospace; font-size: 11px; color: var(--text-dim); width: 64px; }
+
+  .theme-preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .theme-preset {
+    border-radius: 8px; padding: 10px; cursor: pointer; border: 1px solid var(--border);
+    transition: all 0.15s; text-align: center;
+  }
+  .theme-preset:hover, .theme-preset.selected { border-color: var(--gold); }
+  .theme-preset-dots { display: flex; justify-content: center; gap: 4px; margin-bottom: 6px; }
+  .theme-preset-dots span { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .theme-preset-name { font-size: 10px; color: var(--text-secondary); }
+
+  .logo-upload-zone {
+    border: 1.5px dashed var(--border); border-radius: 10px;
+    padding: 20px; text-align: center; cursor: pointer;
+    transition: border-color 0.15s; margin-bottom: 14px;
+  }
+  .logo-upload-zone:hover { border-color: var(--gold); }
+  .logo-upload-zone .upload-icon { font-size: 24px; margin-bottom: 6px; }
+  .logo-upload-zone .upload-text { font-size: 12px; color: var(--text-secondary); }
+  .logo-upload-zone .upload-hint { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+  .reset-banner {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(74,124,199,0.08); border: 1px solid rgba(74,124,199,0.25);
+    border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--text-secondary);
+    margin-bottom: 16px;
+  }
+  .reset-banner strong { color: var(--text-primary); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="logo-area">
+    <div class="logo-icon" id="brand-logo-icon">⚜</div>
+    <div class="logo-text">
+      <h1 id="brand-name">AURUM ERP</h1>
+      <span id="brand-tagline">Mining Intelligence</span>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active" onclick="navigate('dashboard', this)">
+      <span class="nav-icon">◈</span>
+      <span class="nav-text">Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="navigate('inventario', this)">
+      <span class="nav-icon">⬡</span>
+      <span class="nav-text">Inventario</span>
+    </div>
+    <div class="nav-item" onclick="navigate('compras', this)">
+      <span class="nav-icon">↓</span>
+      <span class="nav-text">Compras</span>
+      <span class="nav-badge">3</span>
+    </div>
+    <div class="nav-item" onclick="navigate('ventas', this)">
+      <span class="nav-icon">↑</span>
+      <span class="nav-text">Ventas</span>
+    </div>
+
+    <div class="nav-label">Operaciones</div>
+    <div class="nav-item" onclick="navigate('transformacion', this)">
+      <span class="nav-icon">⚙</span>
+      <span class="nav-text">Transformación</span>
+    </div>
+    <div class="nav-item" onclick="navigate('proveedores', this)">
+      <span class="nav-icon">⬟</span>
+      <span class="nav-text">Proveedores</span>
+    </div>
+    <div class="nav-item" onclick="navigate('clientes', this)">
+      <span class="nav-icon">◎</span>
+      <span class="nav-text">Clientes</span>
+    </div>
+    <div class="nav-item" onclick="navigate('calidad', this)">
+      <span class="nav-icon">◉</span>
+      <span class="nav-text">Calidad / Lab</span>
+    </div>
+
+    <div class="nav-label">Finanzas</div>
+    <div class="nav-item" onclick="navigate('finanzas', this)">
+      <span class="nav-icon">$</span>
+      <span class="nav-text">Contabilidad</span>
+    </div>
+    <div class="nav-item" onclick="navigate('reportes', this)">
+      <span class="nav-icon">≡</span>
+      <span class="nav-text">Reportes</span>
+    </div>
+
+    <div class="nav-label">Sistema</div>
+    <div class="nav-item" onclick="navigate('configuracion', this)">
+      <span class="nav-icon">✦</span>
+      <span class="nav-text">Configuración</span>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-avatar">AM</div>
+    <div class="user-info">
+      <div class="name">Admin Minero</div>
+      <div class="role">Superusuario</div>
+    </div>
+    <div class="collapse-btn" onclick="toggleSidebar()">⟨</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main" id="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <span class="topbar-title" id="page-title">Dashboard General</span>
+      <span class="topbar-subtitle" id="page-sub">Resumen operativo en tiempo real</span>
+    </div>
+    <div class="ticker-strip" id="ticker">
+      <div class="ticker-item"><span class="ticker-symbol">XAU</span><span class="ticker-price">$3,342.80</span><span class="ticker-change up">▲ +0.8%</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">XAG</span><span class="ticker-price">$32.45</span><span class="ticker-change up">▲ +1.2%</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">XPT</span><span class="ticker-price">$1,018.60</span><span class="ticker-change down">▼ -0.3%</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">XPD</span><span class="ticker-price">$1,124.20</span><span class="ticker-change up">▲ +0.5%</span></div>
+    </div>
+    <div class="topbar-actions">
+      <div class="icon-btn" onclick="openModal('modal-transaccion')" title="Nueva Transacción">+</div>
+      <div class="icon-btn" title="Notificaciones">🔔</div>
+      <div class="icon-btn" title="Configuración rápida">⚙</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ DASHBOARD ══════════════════ -->
+  <div class="content">
+    <div class="page active" id="page-dashboard">
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <div class="kpi-header">
+            <span class="kpi-label">Ingresos del Mes</span>
+            <span class="kpi-icon">💰</span>
+          </div>
+          <div class="kpi-value gold">$4.82M</div>
+          <div class="kpi-meta"><span class="up">▲ 12.4%</span> vs mes anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Stock Oro (g)</span>
+            <span class="kpi-icon">⚜</span>
+          </div>
+          <div class="kpi-value gold">8,420g</div>
+          <div class="kpi-meta"><span class="up">▲ 320g</span> entrada esta semana</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Transacciones Activas</span>
+            <span class="kpi-icon">↔</span>
+          </div>
+          <div class="kpi-value blue">34</div>
+          <div class="kpi-meta">8 pendientes de liquidar</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Margen Bruto</span>
+            <span class="kpi-icon">%</span>
+          </div>
+          <div class="kpi-value green">18.6%</div>
+          <div class="kpi-meta"><span class="up">▲ 2.1%</span> sobre meta mensual</div>
+        </div>
+      </div>
+
+      <!-- ROW 2 -->
+      <div class="grid-3">
+        <!-- Transacciones recientes -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title"><span class="dot"></span>Transacciones Recientes</span>
+            <div class="panel-actions">
+              <button class="btn-sm" onclick="navigate('ventas')">Ver todas</button>
+              <button class="btn-sm primary" onclick="openModal('modal-transaccion')">+ Nueva</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>Material</th><th>Tipo</th><th>Peso</th><th>Valor</th><th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="primary">#TRX-0841</td><td class="primary">Oro 24K</td>
+                  <td><span class="badge green">Venta</span></td>
+                  <td>245g</td><td class="gold">$27,340</td>
+                  <td><span class="badge green">Completado</span></td>
+                </tr>
+                <tr>
+                  <td class="primary">#TRX-0840</td><td class="primary">Plata .999</td>
+                  <td><span class="badge blue">Compra</span></td>
+                  <td>2.4kg</td><td class="gold">$2,480</td>
+                  <td><span class="badge gold">En proceso</span></td>
+                </tr>
+                <tr>
+                  <td class="primary">#TRX-0839</td><td class="primary">Oro 18K Crudos</td>
+                  <td><span class="badge blue">Compra</span></td>
+                  <td>890g</td><td class="gold">$52,100</td>
+                  <td><span class="badge green">Completado</span></td>
+                </tr>
+                <tr>
+                  <td class="primary">#TRX-0838</td><td class="primary">Platino</td>
+                  <td><span class="badge green">Venta</span></td>
+                  <td>120g</td><td class="gold">$18,680</td>
+                  <td><span class="badge red">Pendiente</span></td>
+                </tr>
+                <tr>
+                  <td class="primary">#TRX-0837</td><td class="primary">Paladio</td>
+                  <td><span class="badge green">Venta</span></td>
+                  <td>80g</td><td class="gold">$8,990</td>
+                  <td><span class="badge green">Completado</span></td>
+                </tr>
+                <tr>
+                  <td class="primary">#TRX-0836</td><td class="primary">Oro 22K</td>
+                  <td><span class="badge blue">Compra</span></td>
+                  <td>340g</td><td class="gold">$35,700</td>
+                  <td><span class="badge gold">En proceso</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Alertas -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title"><span class="dot" style="background:var(--red)"></span>Alertas del Sistema</span>
+            <button class="btn-sm">Gestionar</button>
+          </div>
+          <div class="alert-list">
+            <div class="alert-item warn">
+              <span class="alert-icon">⚠</span>
+              <div class="alert-text">
+                <div class="alert-title">Stock Crítico — Platino</div>
+                <div class="alert-desc">Solo 45g en bodega. Mínimo recomendado: 200g</div>
+              </div>
+              <span class="alert-time">hace 2h</span>
+            </div>
+            <div class="alert-item info">
+              <span class="alert-icon">ℹ</span>
+              <div class="alert-text">
+                <div class="alert-title">Muestra #LAB-214 lista</div>
+                <div class="alert-desc">Resultados de pureza disponibles en Calidad</div>
+              </div>
+              <span class="alert-time">hace 4h</span>
+            </div>
+            <div class="alert-item warn">
+              <span class="alert-icon">⚠</span>
+              <div class="alert-text">
+                <div class="alert-title">Factura vencida</div>
+                <div class="alert-desc">Proveedor Minera del Chocó — $14,200 vencidos</div>
+              </div>
+              <span class="alert-time">hace 1d</span>
+            </div>
+            <div class="alert-item ok">
+              <span class="alert-icon">✓</span>
+              <div class="alert-text">
+                <div class="alert-title">Transformación completada</div>
+                <div class="alert-desc">Lote LOT-0088: 420g Oro 18K → 24K refinado</div>
+              </div>
+              <span class="alert-time">hace 6h</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 3 -->
+      <div class="grid-2">
+        <!-- Materiales en stock -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title"><span class="dot"></span>Inventario por Material</span>
+            <button class="btn-sm" onclick="navigate('inventario', null)">Ver inventario</button>
+          </div>
+          <div class="material-grid">
+            <div class="material-card">
+              <div class="mat-header">
+                <div class="mat-dot" style="background:#C9A84C"></div>
+                <div>
+                  <div class="mat-name">Oro 24K</div>
+                  <div class="mat-type">Refinado</div>
+                </div>
+              </div>
+              <div class="mat-price">$3,342<span class="mat-unit">/oz</span></div>
+              <div class="mat-stock">Stock: 3,240g • 3 lotes</div>
+            </div>
+            <div class="material-card">
+              <div class="mat-header">
+                <div class="mat-dot" style="background:#C0C0C0"></div>
+                <div>
+                  <div class="mat-name">Plata .999</div>
+                  <div class="mat-type">Refinada</div>
+                </div>
+              </div>
+              <div class="mat-price">$32.45<span class="mat-unit">/oz</span></div>
+              <div class="mat-stock">Stock: 18.4kg • 6 lotes</div>
+            </div>
+            <div class="material-card">
+              <div class="mat-header">
+                <div class="mat-dot" style="background:#E5E4E2"></div>
+                <div>
+                  <div class="mat-name">Platino</div>
+                  <div class="mat-type">Bruto</div>
+                </div>
+              </div>
+              <div class="mat-price" style="color:var(--red)">45g</div>
+              <div class="mat-stock" style="color:var(--red)">⚠ Stock crítico</div>
+            </div>
+            <div class="material-card">
+              <div class="mat-header">
+                <div class="mat-dot" style="background:#7A6228"></div>
+                <div>
+                  <div class="mat-name">Oro 18K</div>
+                  <div class="mat-type">Crudo</div>
+                </div>
+              </div>
+              <div class="mat-price">$2,507<span class="mat-unit">/oz</span></div>
+              <div class="mat-stock">Stock: 2,180g • 5 lotes</div>
+            </div>
+            <div class="material-card">
+              <div class="mat-header">
+                <div class="mat-dot" style="background:#4A90D9"></div>
+                <div>
+                  <div class="mat-name">Paladio</div>
+                  <div class="mat-type">Refinado</div>
+                </div>
+              </div>
+              <div class="mat-price">$1,124<span class="mat-unit">/oz</span></div>
+              <div class="mat-stock">Stock: 340g • 2 lotes</div>
+            </div>
+            <div class="material-card">
+              <div class="mat-header">
+                <div class="mat-dot" style="background:#2D6B5A"></div>
+                <div>
+                  <div class="mat-name">Oro 22K</div>
+                  <div class="mat-type">Crudo</div>
+                </div>
+              </div>
+              <div class="mat-price">$3,065<span class="mat-unit">/oz</span></div>
+              <div class="mat-stock">Stock: 760g • 2 lotes</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Proceso de transformación + Ubicaciones -->
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title"><span class="dot"></span>Pipeline de Transformación</span>
+              <button class="btn-sm" onclick="navigate('transformacion', null)">Ver detalle</button>
+            </div>
+            <div class="pipeline">
+              <div style="font-size:11px; color:var(--text-secondary); margin-bottom:12px;">
+                Lote LOT-0089 — Oro 18K → 24K &nbsp;•&nbsp; 380g
+              </div>
+              <div class="pipeline-steps">
+                <div class="pipe-step done">
+                  <div class="pipe-dot">✓</div>
+                  <div class="pipe-label">Recepción</div>
+                  <div class="pipe-count">Completado</div>
+                </div>
+                <div class="pipe-step done">
+                  <div class="pipe-dot">✓</div>
+                  <div class="pipe-label">Análisis</div>
+                  <div class="pipe-count">Lab OK</div>
+                </div>
+                <div class="pipe-step active">
+                  <div class="pipe-dot">⚙</div>
+                  <div class="pipe-label">Fundición</div>
+                  <div class="pipe-count">En curso</div>
+                </div>
+                <div class="pipe-step pending">
+                  <div class="pipe-dot">4</div>
+                  <div class="pipe-label">Refinado</div>
+                  <div class="pipe-count">Pendiente</div>
+                </div>
+                <div class="pipe-step pending">
+                  <div class="pipe-dot">5</div>
+                  <div class="pipe-label">Certificado</div>
+                  <div class="pipe-count">Pendiente</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title"><span class="dot"></span>Ubicaciones / Minas</span>
+            </div>
+            <div class="location-list">
+              <div class="location-item">
+                <span class="loc-icon">⛏</span>
+                <div class="loc-info">
+                  <div class="loc-name">Mina La Esperanza</div>
+                  <div class="loc-detail">Chocó, Colombia • Activa</div>
+                </div>
+                <div class="loc-stat">
+                  <div class="loc-value">1,240g</div>
+                  <div class="loc-unit">este mes</div>
+                </div>
+              </div>
+              <div class="location-item">
+                <span class="loc-icon">🏭</span>
+                <div class="loc-info">
+                  <div class="loc-name">Planta Medellín</div>
+                  <div class="loc-detail">Bodega + Refinería • Activa</div>
+                </div>
+                <div class="loc-stat">
+                  <div class="loc-value">4,820g</div>
+                  <div class="loc-unit">en stock</div>
+                </div>
+              </div>
+              <div class="location-item">
+                <span class="loc-icon">⛏</span>
+                <div class="loc-info">
+                  <div class="loc-name">Mina El Progreso</div>
+                  <div class="loc-detail">Antioquia, Colombia • Activa</div>
+                </div>
+                <div class="loc-stat">
+                  <div class="loc-value">890g</div>
+                  <div class="loc-unit">este mes</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /dashboard -->
+
+    <!-- ══════════════════ INVENTARIO ══════════════════ -->
+    <div class="page" id="page-inventario">
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <div class="kpi-header"><span class="kpi-label">Valor Total Inventario</span><span class="kpi-icon">📦</span></div>
+          <div class="kpi-value gold">$2.14M</div>
+          <div class="kpi-meta">A precio de mercado hoy</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Total Lotes</span><span class="kpi-icon">⬡</span></div>
+          <div class="kpi-value">42</div>
+          <div class="kpi-meta">6 en cuarentena de calidad</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Crudos vs Refinados</span><span class="kpi-icon">⚙</span></div>
+          <div class="kpi-value blue">58% / 42%</div>
+          <div class="kpi-meta">Por valor total</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Rotación mensual</span><span class="kpi-icon">↻</span></div>
+          <div class="kpi-value green">3.2x</div>
+          <div class="kpi-meta"><span class="up">▲ 0.4x</span> vs mes anterior</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot"></span>Registro de Lotes</span>
+          <div class="panel-actions">
+            <button class="btn-sm">Exportar</button>
+            <button class="btn-sm primary" onclick="openModal('modal-lote')">+ Nuevo Lote</button>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab active">Todos los materiales</div>
+          <div class="tab">Crudos</div>
+          <div class="tab">Refinados / Transformados</div>
+          <div class="tab">En Cuarentena</div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Lote ID</th><th>Material</th><th>Tipo</th><th>Pureza</th><th>Peso Bruto</th><th>Peso Neto</th><th>Ubicación</th><th>Origen</th><th>Fecha Entrada</th><th>Valor Est.</th><th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="primary">LOT-0092</td><td class="primary">Oro</td>
+                <td><span class="badge gold">Crudo</span></td>
+                <td>18K (75%)</td><td>2,400g</td><td>1,800g</td>
+                <td>Planta MDE</td><td>Mina La Esperanza</td>
+                <td>2026-06-10</td><td class="gold">$154,200</td>
+                <td><span class="badge green">Disponible</span></td>
+              </tr>
+              <tr>
+                <td class="primary">LOT-0091</td><td class="primary">Plata</td>
+                <td><span class="badge gray">Refinado</span></td>
+                <td>.999 (99.9%)</td><td>5,200g</td><td>5,198g</td>
+                <td>Planta MDE</td><td>Compra Ext.</td>
+                <td>2026-06-09</td><td class="gold">$5,410</td>
+                <td><span class="badge green">Disponible</span></td>
+              </tr>
+              <tr>
+                <td class="primary">LOT-0090</td><td class="primary">Oro</td>
+                <td><span class="badge green">Refinado</span></td>
+                <td>24K (99.9%)</td><td>420g</td><td>419g</td>
+                <td>Planta MDE</td><td>Transformación interna</td>
+                <td>2026-06-08</td><td class="gold">$45,080</td>
+                <td><span class="badge gold">Reservado</span></td>
+              </tr>
+              <tr>
+                <td class="primary">LOT-0089</td><td class="primary">Oro</td>
+                <td><span class="badge gold">Crudo</span></td>
+                <td>22K (91.6%)</td><td>760g</td><td>696g</td>
+                <td>Planta MDE</td><td>Mina El Progreso</td>
+                <td>2026-06-07</td><td class="gold">$54,320</td>
+                <td><span class="badge blue">En proceso</span></td>
+              </tr>
+              <tr>
+                <td class="primary">LOT-0088</td><td class="primary">Platino</td>
+                <td><span class="badge gold">Crudo</span></td>
+                <td>85%</td><td>55g</td><td>47g</td>
+                <td>Planta MDE</td><td>Compra Ext.</td>
+                <td>2026-06-05</td><td class="gold">$4,300</td>
+                <td><span class="badge red">Stock mínimo</span></td>
+              </tr>
+              <tr>
+                <td class="primary">LOT-0087</td><td class="primary">Paladio</td>
+                <td><span class="badge green">Refinado</span></td>
+                <td>99.5%</td><td>340g</td><td>338g</td>
+                <td>Planta MDE</td><td>Compra Ext.</td>
+                <td>2026-06-04</td><td class="gold">$12,100</td>
+                <td><span class="badge green">Disponible</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ COMPRAS ══════════════════ -->
+    <div class="page" id="page-compras">
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <div class="kpi-header"><span class="kpi-label">Compras del Mes</span><span class="kpi-icon">↓</span></div>
+          <div class="kpi-value gold">$1.24M</div>
+          <div class="kpi-meta"><span class="up">▲ 8.2%</span> vs mes anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Órdenes Pendientes</span><span class="kpi-icon">⏳</span></div>
+          <div class="kpi-value" style="color:var(--red)">3</div>
+          <div class="kpi-meta">Requieren aprobación</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Proveedores Activos</span><span class="kpi-icon">⬟</span></div>
+          <div class="kpi-value blue">12</div>
+          <div class="kpi-meta">2 en evaluación</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Precio Prom. Oro</span><span class="kpi-icon">⚜</span></div>
+          <div class="kpi-value green">$3,190/oz</div>
+          <div class="kpi-meta">4.6% bajo precio mercado</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot"></span>Órdenes de Compra</span>
+          <div class="panel-actions">
+            <button class="btn-sm">Exportar</button>
+            <button class="btn-sm primary" onclick="openModal('modal-compra')">+ Nueva OC</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>OC #</th><th>Proveedor</th><th>Material</th><th>Cantidad</th><th>Precio Acordado</th><th>Total</th><th>Fecha</th><th>Entrega Est.</th><th>Estado</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="primary">OC-2048</td><td class="primary">Minera del Chocó</td>
+                <td>Oro 18K Crudo</td><td>1,200g</td><td>$2,450/oz</td><td class="gold">$105,140</td>
+                <td>2026-06-10</td><td>2026-06-18</td>
+                <td><span class="badge red">Pendiente aprobación</span></td>
+                <td><button class="btn-sm primary" onclick="alert('OC aprobada ✓')">Aprobar</button></td>
+              </tr>
+              <tr>
+                <td class="primary">OC-2047</td><td class="primary">Goldtech S.A.</td>
+                <td>Oro 22K Crudo</td><td>500g</td><td>$3,010/oz</td><td class="gold">$48,320</td>
+                <td>2026-06-09</td><td>2026-06-15</td>
+                <td><span class="badge gold">En tránsito</span></td>
+                <td><button class="btn-sm">Seguir</button></td>
+              </tr>
+              <tr>
+                <td class="primary">OC-2046</td><td class="primary">Plata Andina Ltda.</td>
+                <td>Plata .999</td><td>5kg</td><td>$31.80/oz</td><td class="gold">$5,110</td>
+                <td>2026-06-08</td><td>2026-06-12</td>
+                <td><span class="badge green">Recibida</span></td>
+                <td><button class="btn-sm">Ver lote</button></td>
+              </tr>
+              <tr>
+                <td class="primary">OC-2045</td><td class="primary">PlatGroup</td>
+                <td>Platino Bruto</td><td>200g</td><td>$990/oz</td><td class="gold">$6,350</td>
+                <td>2026-06-07</td><td>2026-06-14</td>
+                <td><span class="badge red">Pendiente aprobación</span></td>
+                <td><button class="btn-sm primary" onclick="alert('OC aprobada ✓')">Aprobar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ VENTAS ══════════════════ -->
+    <div class="page" id="page-ventas">
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <div class="kpi-header"><span class="kpi-label">Ventas del Mes</span><span class="kpi-icon">↑</span></div>
+          <div class="kpi-value gold">$4.82M</div>
+          <div class="kpi-meta"><span class="up">▲ 12.4%</span> meta cumplida al 102%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Clientes Activos</span><span class="kpi-icon">◎</span></div>
+          <div class="kpi-value blue">28</div>
+          <div class="kpi-meta">4 nuevos este mes</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Cotizaciones Abiertas</span><span class="kpi-icon">📋</span></div>
+          <div class="kpi-value">11</div>
+          <div class="kpi-meta">3 vencen en 48h</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Precio Prom. Venta Oro</span><span class="kpi-icon">⚜</span></div>
+          <div class="kpi-value green">$3,420/oz</div>
+          <div class="kpi-meta">2.3% sobre precio mercado</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot"></span>Órdenes de Venta</span>
+          <div class="panel-actions">
+            <button class="btn-sm">Exportar</button>
+            <button class="btn-sm primary" onclick="openModal('modal-venta')">+ Nueva Venta</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>OV #</th><th>Cliente</th><th>Material</th><th>Pureza</th><th>Peso</th><th>Precio/oz</th><th>Total</th><th>Fecha</th><th>Estado</th><th>Factura</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="primary">OV-5241</td><td class="primary">Joyería Oro & Arte</td>
+                <td>Oro 24K</td><td>99.9%</td><td>245g</td><td>$3,410</td>
+                <td class="gold">$26,830</td><td>2026-06-11</td>
+                <td><span class="badge green">Completada</span></td><td><span class="badge blue">FAC-1842</span></td>
+              </tr>
+              <tr>
+                <td class="primary">OV-5240</td><td class="primary">Global Metals Corp.</td>
+                <td>Platino</td><td>99%</td><td>120g</td><td>$1,080</td>
+                <td class="gold">$4,150</td><td>2026-06-10</td>
+                <td><span class="badge red">Pago pendiente</span></td><td><span class="badge red">FAC-1841</span></td>
+              </tr>
+              <tr>
+                <td class="primary">OV-5239</td><td class="primary">Banco de la República</td>
+                <td>Oro 24K</td><td>99.9%</td><td>1,000g</td><td>$3,390</td>
+                <td class="gold">$109,000</td><td>2026-06-09</td>
+                <td><span class="badge green">Completada</span></td><td><span class="badge green">FAC-1840</span></td>
+              </tr>
+              <tr>
+                <td class="primary">OV-5238</td><td class="primary">Silver & Sons Ltd.</td>
+                <td>Plata .999</td><td>99.9%</td><td>10kg</td><td>$32.90</td>
+                <td class="gold">$10,580</td><td>2026-06-08</td>
+                <td><span class="badge gold">En preparación</span></td><td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ TRANSFORMACIÓN ══════════════════ -->
+    <div class="page" id="page-transformacion">
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <div class="kpi-header"><span class="kpi-label">Procesos Activos</span><span class="kpi-icon">⚙</span></div>
+          <div class="kpi-value blue">7</div>
+          <div class="kpi-meta">En diversas etapas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Material en Proceso</span><span class="kpi-icon">⚖</span></div>
+          <div class="kpi-value gold">4,820g</div>
+          <div class="kpi-meta">Oro + Plata + Platino</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Eficiencia Promedio</span><span class="kpi-icon">%</span></div>
+          <div class="kpi-value green">96.4%</div>
+          <div class="kpi-meta">Rendimiento de material</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Completados Hoy</span><span class="kpi-icon">✓</span></div>
+          <div class="kpi-value">2</div>
+          <div class="kpi-meta">420g Au + 2.4kg Ag</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot"></span>Órdenes de Transformación</span>
+          <div class="panel-actions">
+            <button class="btn-sm primary" onclick="openModal('modal-transformacion')">+ Nueva OT</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>OT #</th><th>Material Entrada</th><th>Proceso</th><th>Material Salida</th><th>Cantidad</th><th>Rendimiento Est.</th><th>Responsable</th><th>Inicio</th><th>Fin Est.</th><th>Etapa</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="primary">OT-0089</td><td>Oro 18K Crudo</td>
+                <td>Refinación ácida</td><td>Oro 24K</td><td>380g</td>
+                <td class="green">97.2%</td><td>Luis Mejía</td>
+                <td>2026-06-09</td><td>2026-06-13</td>
+                <td><span class="badge blue">Fundición</span></td>
+              </tr>
+              <tr>
+                <td class="primary">OT-0088</td><td>Oro 22K Crudo</td>
+                <td>Refinación</td><td>Oro 24K</td><td>696g</td>
+                <td class="green">96.8%</td><td>Carlos Vélez</td>
+                <td>2026-06-10</td><td>2026-06-16</td>
+                <td><span class="badge gold">Análisis lab</span></td>
+              </tr>
+              <tr>
+                <td class="primary">OT-0087</td><td>Plata .925</td>
+                <td>Purificación</td><td>Plata .999</td><td>2.4kg</td>
+                <td class="green">99.1%</td><td>Ana Torres</td>
+                <td>2026-06-07</td><td>2026-06-11</td>
+                <td><span class="badge green">Completado</span></td>
+              </tr>
+              <tr>
+                <td class="primary">OT-0086</td><td>Oro 24K Barras</td>
+                <td>Laminado</td><td>Láminas 1mm</td><td>200g</td>
+                <td class="green">99.8%</td><td>Luis Mejía</td>
+                <td>2026-06-06</td><td>2026-06-08</td>
+                <td><span class="badge green">Completado</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ CALIDAD / LAB ══════════════════ -->
+    <div class="page" id="page-calidad">
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <div class="kpi-header"><span class="kpi-label">Muestras en Análisis</span><span class="kpi-icon">🔬</span></div>
+          <div class="kpi-value blue">8</div>
+          <div class="kpi-meta">3 con resultados hoy</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Lotes Certificados</span><span class="kpi-icon">✓</span></div>
+          <div class="kpi-value green">36</div>
+          <div class="kpi-meta">Este mes</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Rechazos QA</span><span class="kpi-icon">✗</span></div>
+          <div class="kpi-value" style="color:var(--red)">2</div>
+          <div class="kpi-meta">Pureza fuera de rango</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Tiempo Prom. Análisis</span><span class="kpi-icon">⏱</span></div>
+          <div class="kpi-value">4.2h</div>
+          <div class="kpi-meta"><span class="up">▼ 0.8h</span> vs semana pasada</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot"></span>Registro de Muestras y Análisis</span>
+          <div class="panel-actions">
+            <button class="btn-sm primary" onclick="openModal('modal-muestra')">+ Registrar Muestra</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Muestra #</th><th>Lote Origen</th><th>Material</th><th>Método</th><th>Pureza Declarada</th><th>Pureza Medida</th><th>Diferencia</th><th>Analista</th><th>Fecha</th><th>Resultado</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="primary">LAB-0214</td><td>LOT-0092</td><td>Oro</td>
+                <td>Copelación</td><td>75% (18K)</td><td class="green">75.4%</td>
+                <td class="green">+0.4%</td><td>M. Sánchez</td>
+                <td>2026-06-11</td><td><span class="badge green">Aprobado</span></td>
+              </tr>
+              <tr>
+                <td class="primary">LAB-0213</td><td>LOT-0091</td><td>Plata</td>
+                <td>XRF</td><td>99.9%</td><td class="green">99.92%</td>
+                <td class="green">+0.02%</td><td>M. Sánchez</td>
+                <td>2026-06-10</td><td><span class="badge green">Aprobado</span></td>
+              </tr>
+              <tr>
+                <td class="primary">LAB-0212</td><td>LOT-0090</td><td>Oro</td>
+                <td>Copelación</td><td>99.9%</td><td class="red">98.8%</td>
+                <td class="red">-1.1%</td><td>P. Restrepo</td>
+                <td>2026-06-09</td><td><span class="badge red">Rechazado</span></td>
+              </tr>
+              <tr>
+                <td class="primary">LAB-0211</td><td>LOT-0089</td><td>Oro</td>
+                <td>Ensayo de fuego</td><td>91.6% (22K)</td><td class="green">91.8%</td>
+                <td class="green">+0.2%</td><td>P. Restrepo</td>
+                <td>2026-06-09</td><td><span class="badge green">Aprobado</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PROVEEDORES ══════════════════ -->
+    <div class="page" id="page-proveedores">
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <div class="kpi-header"><span class="kpi-label">Proveedores Registrados</span><span class="kpi-icon">⬟</span></div>
+          <div class="kpi-value gold">18</div><div class="kpi-meta">12 activos</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Cuentas por Pagar</span><span class="kpi-icon">$</span></div>
+          <div class="kpi-value" style="color:var(--red)">$84,200</div><div class="kpi-meta">3 facturas vencidas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Compras Acumuladas</span><span class="kpi-icon">↓</span></div>
+          <div class="kpi-value blue">$3.8M</div><div class="kpi-meta">YTD 2026</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Rating Prom. Proveedores</span><span class="kpi-icon">★</span></div>
+          <div class="kpi-value green">4.2/5</div><div class="kpi-meta">Basado en 48 evaluaciones</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot"></span>Directorio de Proveedores</span>
+          <div class="panel-actions">
+            <button class="btn-sm primary" onclick="openModal('modal-proveedor')">+ Nuevo Proveedor</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Razón Social</th><th>Tipo Material</th><th>País/Región</th><th>Certificaciones</th><th>Compras YTD</th><th>Rating</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr class="clickable" onclick="openProveedor(0)"><td class="primary">Minera del Chocó S.A.S.</td><td>Oro Crudo</td><td>Chocó, CO</td><td>RUC, RUCOM</td><td class="gold">$1.24M</td><td class="green">4.6/5</td><td><span class="badge green">Activo</span></td></tr>
+              <tr class="clickable" onclick="openProveedor(1)"><td class="primary">Goldtech Internacional S.A.</td><td>Oro / Platino</td><td>Bogotá, CO</td><td>ISO 9001, RUC</td><td class="gold">$890K</td><td class="green">4.4/5</td><td><span class="badge green">Activo</span></td></tr>
+              <tr class="clickable" onclick="openProveedor(2)"><td class="primary">Plata Andina Ltda.</td><td>Plata Refinada</td><td>Medellín, CO</td><td>RUCOM</td><td class="gold">$340K</td><td>3.8/5</td><td><span class="badge green">Activo</span></td></tr>
+              <tr class="clickable" onclick="openProveedor(3)"><td class="primary">PlatGroup LATAM</td><td>Platino / Paladio</td><td>Lima, PE</td><td>ISO 9001</td><td class="gold">$210K</td><td class="green">4.1/5</td><td><span class="badge blue">En evaluación</span></td></tr>
+              <tr class="clickable" onclick="openProveedor(4)"><td class="primary">Mineros del Cauca</td><td>Oro Crudo</td><td>Cauca, CO</td><td>RUCOM</td><td class="gold">$180K</td><td>3.5/5</td><td><span class="badge gray">Inactivo</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ CLIENTES ══════════════════ -->
+    <div class="page" id="page-clientes">
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <div class="kpi-header"><span class="kpi-label">Clientes Registrados</span><span class="kpi-icon">◎</span></div>
+          <div class="kpi-value gold">52</div><div class="kpi-meta">28 activos este mes</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Cuentas por Cobrar</span><span class="kpi-icon">$</span></div>
+          <div class="kpi-value" style="color:var(--red)">$124,800</div><div class="kpi-meta">5 facturas pendientes</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Ventas Acumuladas</span><span class="kpi-icon">↑</span></div>
+          <div class="kpi-value blue">$8.4M</div><div class="kpi-meta">YTD 2026</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Top Cliente</span><span class="kpi-icon">★</span></div>
+          <div class="kpi-value" style="font-size:14px; color:var(--gold)">Banco Rep.</div><div class="kpi-meta">$2.1M en compras YTD</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot"></span>Directorio de Clientes</span>
+          <div class="panel-actions">
+            <button class="btn-sm primary" onclick="openModal('modal-cliente')">+ Nuevo Cliente</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Razón Social / Nombre</th><th>Segmento</th><th>Ciudad</th><th>Material Principal</th><th>Compras YTD</th><th>Saldo Pendiente</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr class="clickable" onclick="openCliente(0)"><td class="primary">Banco de la República</td><td>Institución Financiera</td><td>Bogotá</td><td>Oro 24K Barras</td><td class="gold">$2.1M</td><td class="green">$0</td><td><span class="badge green">Activo</span></td></tr>
+              <tr class="clickable" onclick="openCliente(1)"><td class="primary">Joyería Oro & Arte S.A.S.</td><td>Joyería / Retail</td><td>Medellín</td><td>Oro 18K / 24K</td><td class="gold">$480K</td><td class="red">$28,400</td><td><span class="badge gold">Crédito activo</span></td></tr>
+              <tr class="clickable" onclick="openCliente(2)"><td class="primary">Global Metals Corp.</td><td>Exportador</td><td>Barranquilla</td><td>Platino / Paladio</td><td class="gold">$320K</td><td class="red">$18,680</td><td><span class="badge red">Pago pendiente</span></td></tr>
+              <tr class="clickable" onclick="openCliente(3)"><td class="primary">Silver & Sons Ltd.</td><td>Industria</td><td>Cali</td><td>Plata .999</td><td class="gold">$210K</td><td class="green">$0</td><td><span class="badge green">Activo</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ FINANZAS ══════════════════ -->
+    <div class="page" id="page-finanzas">
+      <div class="kpi-grid">
+        <div class="kpi-card highlight">
+          <div class="kpi-header"><span class="kpi-label">Ingresos YTD</span><span class="kpi-icon">$</span></div>
+          <div class="kpi-value gold">$8.4M</div><div class="kpi-meta"><span class="up">▲ 18.2%</span> vs año anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Costos YTD</span><span class="kpi-icon">↓</span></div>
+          <div class="kpi-value" style="color:var(--red)">$6.84M</div><div class="kpi-meta">Margen: 18.6%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Utilidad Neta</span><span class="kpi-icon">%</span></div>
+          <div class="kpi-value green">$1.56M</div><div class="kpi-meta"><span class="up">▲ 24.1%</span> vs año anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-header"><span class="kpi-label">Flujo de Caja</span><span class="kpi-icon">↔</span></div>
+          <div class="kpi-value blue">$420K</div><div class="kpi-meta">Positivo este mes</div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="tab-bar">
+          <div class="tab active" onclick="switchFinTab(0, this)">Cuentas por Cobrar / Pagar</div>
+          <div class="tab" onclick="switchFinTab(1, this)">Libro Mayor</div>
+          <div class="tab" onclick="switchFinTab(2, this)">Balance General</div>
+        </div>
+
+        <!-- TAB 0: CxC / CxP -->
+        <div class="fin-tab" id="fin-tab-0">
+          <div class="grid-2" style="margin:0; padding:16px;">
+            <div class="panel" style="border:1px solid var(--border)">
+              <div class="panel-header"><span class="panel-title"><span class="dot"></span>Cuentas por Cobrar</span></div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Cliente</th><th>Factura</th><th>Monto</th><th>Vencimiento</th><th>Estado</th></tr></thead>
+                  <tbody>
+                    <tr><td class="primary">Global Metals Corp.</td><td>FAC-1841</td><td class="gold">$18,680</td><td>2026-06-08</td><td><span class="badge red">Vencida</span></td></tr>
+                    <tr><td class="primary">Joyería Oro & Arte</td><td>FAC-1838</td><td class="gold">$28,400</td><td>2026-06-20</td><td><span class="badge gold">Por vencer</span></td></tr>
+                    <tr><td class="primary">Silver & Sons</td><td>FAC-1840</td><td class="gold">$10,580</td><td>2026-06-25</td><td><span class="badge green">Al día</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="panel" style="border:1px solid var(--border)">
+              <div class="panel-header"><span class="panel-title"><span class="dot"></span>Cuentas por Pagar</span></div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Proveedor</th><th>Monto</th><th>Vencimiento</th><th>Estado</th></tr></thead>
+                  <tbody>
+                    <tr><td class="primary">Minera del Chocó</td><td class="gold">$14,200</td><td>2026-06-05</td><td><span class="badge red">Vencida</span></td></tr>
+                    <tr><td class="primary">Goldtech S.A.</td><td class="gold">$48,320</td><td>2026-06-18</td><td><span class="badge gold">Pendiente</span></td></tr>
+                    <tr><td class="primary">PlatGroup</td><td class="gold">$6,350</td><td>2026-06-22</td><td><span class="badge green">Al día</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 1: LIBRO MAYOR -->
+        <div class="fin-tab" id="fin-tab-1" style="display:none;">
+          <div class="panel-header" style="border-top:1px solid var(--border)">
+            <span class="panel-title"><span class="dot"></span>Asientos Contables Recientes</span>
+            <div class="panel-actions">
+              <button class="btn-sm" onclick="alert('Exportando libro mayor a Excel...')">Exportar</button>
+              <button class="btn-sm primary" onclick="openModal('modal-asiento')">+ Nuevo Asiento</button>
+            </div>
+          </div>
+          <div class="ledger-entry head">
+            <span>Fecha</span><span>Cuenta / Detalle</span><span style="text-align:right">Débito</span><span style="text-align:right">Crédito</span>
+          </div>
+          <div class="ledger-entry">
+            <span class="ledger-date">11/06/26</span>
+            <span class="ledger-desc"><div class="ledger-account">Caja / Bancos</div><div class="ledger-sub">Cobro OV-5241 — Joyería Oro & Arte</div></span>
+            <span class="ledger-debit">$26,830</span><span class="ledger-credit">—</span>
+          </div>
+          <div class="ledger-entry">
+            <span class="ledger-date">11/06/26</span>
+            <span class="ledger-desc"><div class="ledger-account">Ingresos por Venta</div><div class="ledger-sub">Oro 24K — 245g</div></span>
+            <span class="ledger-debit">—</span><span class="ledger-credit">$26,830</span>
+          </div>
+          <div class="ledger-entry">
+            <span class="ledger-date">10/06/26</span>
+            <span class="ledger-desc"><div class="ledger-account">Inventario — Materia Prima</div><div class="ledger-sub">Compra OC-2046 — Plata Andina</div></span>
+            <span class="ledger-debit">$5,110</span><span class="ledger-credit">—</span>
+          </div>
+          <div class="ledger-entry">
+            <span class="ledger-date">10/06/26</span>
+            <span class="ledger-desc"><div class="ledger-account">Cuentas por Pagar</div><div class="ledger-sub">Plata Andina Ltda. — OC-2046</div></span>
+            <span class="ledger-debit">—</span><span class="ledger-credit">$5,110</span>
+          </div>
+          <div class="ledger-entry">
+            <span class="ledger-date">09/06/26</span>
+            <span class="ledger-desc"><div class="ledger-account">Costo de Transformación</div><div class="ledger-sub">OT-0087 — Purificación Plata</div></span>
+            <span class="ledger-debit">$840</span><span class="ledger-credit">—</span>
+          </div>
+          <div class="ledger-entry">
+            <span class="ledger-date">09/06/26</span>
+            <span class="ledger-desc"><div class="ledger-account">Caja / Bancos</div><div class="ledger-sub">Pago mano de obra refinación</div></span>
+            <span class="ledger-debit">—</span><span class="ledger-credit">$840</span>
+          </div>
+          <div class="ledger-entry">
+            <span class="ledger-date">08/06/26</span>
+            <span class="ledger-desc"><div class="ledger-account">Cuentas por Cobrar</div><div class="ledger-sub">Global Metals Corp. — FAC-1841</div></span>
+            <span class="ledger-debit">$18,680</span><span class="ledger-credit">—</span>
+          </div>
+          <div class="ledger-entry" style="border-bottom:none;">
+            <span class="ledger-date">08/06/26</span>
+            <span class="ledger-desc"><div class="ledger-account">Ingresos por Venta</div><div class="ledger-sub">Platino — 120g</div></span>
+            <span class="ledger-debit">—</span><span class="ledger-credit">$18,680</span>
+          </div>
+        </div>
+
+        <!-- TAB 2: BALANCE GENERAL -->
+        <div class="fin-tab" id="fin-tab-2" style="display:none;">
+          <div class="panel-header" style="border-top:1px solid var(--border)">
+            <span class="panel-title"><span class="dot"></span>Balance General — Junio 2026</span>
+            <button class="btn-sm" onclick="alert('Exportando balance a PDF...')">Exportar PDF</button>
+          </div>
+          <div class="grid-2" style="margin:0; padding:18px;">
+            <div>
+              <div class="balance-section-title">Activos</div>
+              <div class="balance-row"><span class="label">Caja y Bancos</span><span class="val">$612,400</span></div>
+              <div class="balance-row"><span class="label">Cuentas por Cobrar</span><span class="val">$124,800</span></div>
+              <div class="balance-row"><span class="label">Inventario (a mercado)</span><span class="val gold">$2,140,000</span></div>
+              <div class="balance-row"><span class="label">Activos Fijos (Planta y Equipo)</span><span class="val">$890,000</span></div>
+              <div class="balance-row total"><span class="label">Total Activos</span><span class="val gold">$3,767,200</span></div>
+
+              <div class="balance-section-title">Pasivos</div>
+              <div class="balance-row"><span class="label">Cuentas por Pagar</span><span class="val">$84,200</span></div>
+              <div class="balance-row"><span class="label">Obligaciones Financieras</span><span class="val">$240,000</span></div>
+              <div class="balance-row total"><span class="label">Total Pasivos</span><span class="val">$324,200</span></div>
+            </div>
+            <div>
+              <div class="balance-section-title">Patrimonio</div>
+              <div class="balance-row"><span class="label">Capital Social</span><span class="val">$2,400,000</span></div>
+              <div class="balance-row"><span class="label">Utilidades Retenidas</span><span class="val">$483,000</span></div>
+              <div class="balance-row"><span class="label">Utilidad del Ejercicio</span><span class="val green">$560,000</span></div>
+              <div class="balance-row total"><span class="label">Total Patrimonio</span><span class="val green">$3,443,000</span></div>
+
+              <div class="balance-section-title">Verificación</div>
+              <div class="balance-row total"><span class="label">Pasivo + Patrimonio</span><span class="val gold">$3,767,200</span></div>
+              <div class="alert-item ok" style="margin-top:10px">
+                <span class="alert-icon">✓</span>
+                <div class="alert-text"><div class="alert-title">Balance cuadrado</div><div class="alert-desc">Activos = Pasivos + Patrimonio</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ REPORTES ══════════════════ -->
+    <div class="page" id="page-reportes">
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <span class="panel-title"><span class="dot"></span>Generador de Reportes</span>
+        </div>
+        <div style="padding:20px; display:grid; grid-template-columns: repeat(3,1fr); gap:12px;">
+          <div class="material-card" onclick="renderReport('inventario')">
+            <div class="mat-header"><span style="font-size:20px">📦</span><div><div class="mat-name">Inventario Valorizado</div><div class="mat-type">PDF / Excel</div></div></div>
+            <div class="mat-stock">Stock actual a precios de mercado por material, pureza y ubicación</div>
+          </div>
+          <div class="material-card" onclick="renderReport('pyg')">
+            <div class="mat-header"><span style="font-size:20px">📊</span><div><div class="mat-name">P&G Mensual</div><div class="mat-type">PDF / Excel</div></div></div>
+            <div class="mat-stock">Ingresos, costos, márgenes y utilidades por período seleccionado</div>
+          </div>
+          <div class="material-card" onclick="renderReport('trazabilidad')">
+            <div class="mat-header"><span style="font-size:20px">🔍</span><div><div class="mat-name">Trazabilidad de Lotes</div><div class="mat-type">PDF</div></div></div>
+            <div class="mat-stock">Cadena completa: origen → análisis → transformación → venta</div>
+          </div>
+          <div class="material-card" onclick="renderReport('dian')">
+            <div class="mat-header"><span style="font-size:20px">🏛</span><div><div class="mat-name">Informe DIAN / UIAF</div><div class="mat-type">XML / PDF</div></div></div>
+            <div class="mat-stock">Declaraciones de compra-venta de minerales preciosos para entes reguladores</div>
+          </div>
+          <div class="material-card" onclick="renderReport('kpis')">
+            <div class="mat-header"><span style="font-size:20px">⚡</span><div><div class="mat-name">KPIs Operativos</div><div class="mat-type">Dashboard PDF</div></div></div>
+            <div class="mat-stock">Eficiencias de proceso, tiempos de ciclo y rendimiento de materiales</div>
+          </div>
+          <div class="material-card" onclick="renderReport('precios')">
+            <div class="mat-header"><span style="font-size:20px">📈</span><div><div class="mat-name">Análisis de Precios</div><div class="mat-type">Excel</div></div></div>
+            <div class="mat-stock">Precios de compra vs mercado vs venta. Evolución histórica por material</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA PREVIA DEL REPORTE -->
+      <div id="report-output"></div>
+    </div>
+
+    <!-- ══════════════════ CONFIGURACIÓN ══════════════════ -->
+    <div class="page" id="page-configuracion">
+
+      <div class="tab-bar" style="padding:0 0 0 0; margin-bottom:16px; border-bottom:none;">
+        <div class="tab active" style="border:1px solid var(--border); border-radius:8px; margin-right:8px;" onclick="switchConfigTab(0, this)">🎨 Apariencia / Marca</div>
+        <div class="tab" style="border:1px solid var(--border); border-radius:8px; margin-right:8px;" onclick="switchConfigTab(1, this)">⚙ Módulos</div>
+        <div class="tab" style="border:1px solid var(--border); border-radius:8px; margin-right:8px;" onclick="switchConfigTab(2, this)">📋 Parámetros</div>
+        <div class="tab" style="border:1px solid var(--border); border-radius:8px;" onclick="switchConfigTab(3, this)">👥 Usuarios y Roles</div>
+      </div>
+
+      <!-- ═══ TAB 0: APARIENCIA / MARCA (PERSONALIZACIÓN POR EMPRESA) ═══ -->
+      <div class="config-tab" id="config-tab-0">
+        <div class="reset-banner">
+          <span>ℹ️</span>
+          <span>Esta apariencia es <strong>exclusiva de tu empresa</strong>. Si no personalizas nada, el sistema usa automáticamente el tema por defecto de Aurum ERP. Los cambios se aplican en vivo y se guardan en este navegador.</span>
+        </div>
+
+        <div class="grid-2">
+          <!-- Columna izquierda: controles -->
+          <div style="display:flex; flex-direction:column; gap:16px;">
+
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title"><span class="dot"></span>Identidad de la Empresa</span></div>
+              <div style="padding:16px;">
+                <div class="form-group">
+                  <label class="form-label">Nombre del sistema / Empresa</label>
+                  <input class="form-input" id="input-brand-name" type="text" placeholder="Ej: Minera Atlas ERP" value="AURUM ERP">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Eslogan / Subtítulo</label>
+                  <input class="form-input" id="input-brand-tagline" type="text" placeholder="Ej: Gestión Minera Integral" value="Mining Intelligence">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Inicial / Símbolo del logo (1-2 caracteres)</label>
+                  <input class="form-input" id="input-brand-symbol" type="text" maxlength="2" placeholder="⚜" value="⚜">
+                </div>
+                <label class="form-label">Logo personalizado (opcional)</label>
+                <div class="logo-upload-zone" onclick="document.getElementById('logo-upload-input').click()">
+                  <div class="upload-icon">🖼️</div>
+                  <div class="upload-text">Subir imagen del logo</div>
+                  <div class="upload-hint">PNG, JPG o SVG — se mostrará en lugar del símbolo</div>
+                </div>
+                <input type="file" id="logo-upload-input" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title"><span class="dot"></span>Paleta de Colores</span></div>
+              <div style="padding:16px;">
+                <div class="theme-preset-grid">
+                  <div class="theme-preset selected" onclick="applyPreset('gold', this)">
+                    <div class="theme-preset-dots"><span style="background:#C9A84C"></span><span style="background:#0A0A0B"></span><span style="background:#3DAA6E"></span></div>
+                    <div class="theme-preset-name">Aurum (default)</div>
+                  </div>
+                  <div class="theme-preset" onclick="applyPreset('emerald', this)">
+                    <div class="theme-preset-dots"><span style="background:#3DAA6E"></span><span style="background:#0A0E0C"></span><span style="background:#C9A84C"></span></div>
+                    <div class="theme-preset-name">Esmeralda</div>
+                  </div>
+                  <div class="theme-preset" onclick="applyPreset('platinum', this)">
+                    <div class="theme-preset-dots"><span style="background:#A8B0C0"></span><span style="background:#0E0E12"></span><span style="background:#4A7CC7"></span></div>
+                    <div class="theme-preset-name">Platino</div>
+                  </div>
+                  <div class="theme-preset" onclick="applyPreset('copper', this)">
+                    <div class="theme-preset-dots"><span style="background:#C77D4A"></span><span style="background:#120D0A"></span><span style="background:#D4A574"></span></div>
+                    <div class="theme-preset-name">Cobre</div>
+                  </div>
+                </div>
+
+                <div class="color-input-row">
+                  <label>Color primario (acento principal)</label>
+                  <div class="color-swatch-wrap">
+                    <input type="color" class="color-swatch" id="picker-gold" value="#C9A84C" oninput="updateColor('--gold', this.value, 'hex-gold')">
+                    <span class="color-hex" id="hex-gold">#C9A84C</span>
+                  </div>
+                </div>
+                <div class="color-input-row">
+                  <label>Color de fondo principal</label>
+                  <div class="color-swatch-wrap">
+                    <input type="color" class="color-swatch" id="picker-bg" value="#0A0A0B" oninput="updateColor('--bg-deep', this.value, 'hex-bg')">
+                    <span class="color-hex" id="hex-bg">#0A0A0B</span>
+                  </div>
+                </div>
+                <div class="color-input-row">
+                  <label>Color de éxito / positivo</label>
+                  <div class="color-swatch-wrap">
+                    <input type="color" class="color-swatch" id="picker-green" value="#3DAA6E" oninput="updateColor('--green', this.value, 'hex-green')">
+                    <span class="color-hex" id="hex-green">#3DAA6E</span>
+                  </div>
+                </div>
+                <div class="color-input-row" style="border-bottom:none">
+                  <label>Color de alerta / negativo</label>
+                  <div class="color-swatch-wrap">
+                    <input type="color" class="color-swatch" id="picker-red" value="#D45454" oninput="updateColor('--red', this.value, 'hex-red')">
+                    <span class="color-hex" id="hex-red">#D45454</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+              <button class="btn primary" style="flex:1; justify-content:center" onclick="saveBranding()">💾 Guardar como tema de mi empresa</button>
+              <button class="btn secondary" onclick="resetBranding()">↺ Restaurar tema del sistema</button>
+            </div>
+          </div>
+
+          <!-- Columna derecha: vista previa en vivo -->
+          <div>
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title"><span class="dot"></span>Vista Previa en Vivo</span></div>
+              <div style="padding:16px;">
+                <div class="brand-preview-card">
+                  <div class="brand-preview-logo" id="preview-logo" style="background:linear-gradient(135deg, var(--gold), var(--gold-dim)); color:var(--bg-deep);">⚜</div>
+                  <div class="brand-preview-text">
+                    <h3 id="preview-name">AURUM ERP</h3>
+                    <span id="preview-tagline">Mining Intelligence</span>
+                  </div>
+                </div>
+                <div class="kpi-card highlight" style="margin-bottom:10px;">
+                  <div class="kpi-header"><span class="kpi-label">Ejemplo — Ingresos del Mes</span><span class="kpi-icon">💰</span></div>
+                  <div class="kpi-value gold">$4.82M</div>
+                  <div class="kpi-meta"><span class="up">▲ 12.4%</span> vs mes anterior</div>
+                </div>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                  <span class="badge green">Activo</span>
+                  <span class="badge gold">Pendiente</span>
+                  <span class="badge red">Vencido</span>
+                  <span class="badge blue">En proceso</span>
+                </div>
+                <button class="btn primary" style="width:100%; justify-content:center;">Botón de acción primaria</button>
+                <p style="font-size:11px; color:var(--text-dim); margin-top:14px; line-height:1.5;">
+                  Esta tarjeta refleja exactamente cómo se verán el logo, nombre y colores en todo el sistema — sidebar, botones, badges y métricas — una vez guardes los cambios.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB 1: MÓDULOS ═══ -->
+      <div class="config-tab" id="config-tab-1" style="display:none;">
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title"><span class="dot"></span>Módulos Activos</span></div>
+            <div style="padding:14px; display:flex; flex-direction:column; gap:8px;">
+              <div id="toggles"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title"><span class="dot"></span>Acerca de los Módulos</span></div>
+            <div style="padding:16px;">
+              <div class="alert-item info">
+                <span class="alert-icon">ℹ</span>
+                <div class="alert-text">
+                  <div class="alert-title">Personalizable por suscripción</div>
+                  <div class="alert-desc">Activa o desactiva módulos según el plan y las necesidades de tu empresa. Los módulos desactivados se ocultan del menú lateral para todos los usuarios.</div>
+                </div>
+              </div>
+              <div class="alert-item ok" style="margin-top:8px;">
+                <span class="alert-icon">✓</span>
+                <div class="alert-text">
+                  <div class="alert-title">Cambios inmediatos</div>
+                  <div class="alert-desc">No requiere reiniciar sesión. Los cambios aplican al instante para los próximos accesos.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB 2: PARÁMETROS ═══ -->
+      <div class="config-tab" id="config-tab-2" style="display:none;">
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title"><span class="dot"></span>Parámetros de Negocio</span></div>
+            <div style="padding:14px;">
+              <div class="form-group"><label class="form-label">Moneda Principal</label><select class="form-select"><option>USD — Dólar Americano</option><option>COP — Peso Colombiano</option><option>EUR — Euro</option></select></div>
+              <div class="form-group"><label class="form-label">Unidad de Peso por Defecto</label><select class="form-select"><option>Gramos (g)</option><option>Onza Troy (oz)</option><option>Kilogramos (kg)</option></select></div>
+              <div class="form-group"><label class="form-label">Stock Mínimo Oro (g)</label><input class="form-input" type="number" value="500"></div>
+              <div class="form-group"><label class="form-label">Stock Mínimo Platino (g)</label><input class="form-input" type="number" value="200"></div>
+              <div class="form-group"><label class="form-label">Margen Mínimo de Venta (%)</label><input class="form-input" type="number" value="8"></div>
+              <button class="btn primary" style="margin-top:6px" onclick="alert('Configuración guardada ✓')">💾 Guardar cambios</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title"><span class="dot"></span>Localización y Formato</span></div>
+            <div style="padding:14px;">
+              <div class="form-group"><label class="form-label">Idioma del sistema</label><select class="form-select"><option>Español (Colombia)</option><option>Español (México)</option><option>English (US)</option><option>Português (Brasil)</option></select></div>
+              <div class="form-group"><label class="form-label">Zona horaria</label><select class="form-select"><option>América/Bogotá (GMT-5)</option><option>América/Lima (GMT-5)</option><option>América/Ciudad_de_México (GMT-6)</option></select></div>
+              <div class="form-group"><label class="form-label">Formato de fecha</label><select class="form-select"><option>DD/MM/AAAA</option><option>AAAA-MM-DD</option><option>MM/DD/AAAA</option></select></div>
+              <div class="form-group"><label class="form-label">Entidad reguladora aplicable</label><select class="form-select"><option>DIAN / UIAF — Colombia</option><option>SUNAT — Perú</option><option>SAT — México</option><option>Ninguna</option></select></div>
+              <button class="btn primary" style="margin-top:6px" onclick="alert('Configuración guardada ✓')">💾 Guardar cambios</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB 3: USUARIOS Y ROLES ═══ -->
+      <div class="config-tab" id="config-tab-3" style="display:none;">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title"><span class="dot"></span>Usuarios y Roles</span>
+            <button class="btn-sm primary" onclick="openModal('modal-usuario')">+ Nuevo Usuario</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Módulos</th><th>Último acceso</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td class="primary">Admin Minero</td><td>admin@aurumerp.co</td><td><span class="badge gold">Superusuario</span></td><td>Todos</td><td>Ahora</td><td><span class="badge green">Activo</span></td></tr>
+                <tr><td class="primary">Juan García</td><td>jgarcia@aurumerp.co</td><td><span class="badge blue">Operativo</span></td><td>Compras, Inventario, Trans.</td><td>Hace 2h</td><td><span class="badge green">Activo</span></td></tr>
+                <tr><td class="primary">María López</td><td>mlopez@aurumerp.co</td><td><span class="badge gray">Finanzas</span></td><td>Ventas, Finanzas, Reportes</td><td>Hace 1d</td><td><span class="badge green">Activo</span></td></tr>
+                <tr><td class="primary">Pedro Ríos</td><td>prios@aurumerp.co</td><td><span class="badge gray">Laboratorio</span></td><td>Calidad / Lab</td><td>Hace 3h</td><td><span class="badge green">Activo</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ══════════════════ DRAWERS DE DETALLE ══════════════════ -->
+
+<!-- Drawer: Proveedor -->
+<div class="drawer-overlay" id="drawer-proveedor">
+  <div class="drawer">
+    <div class="drawer-head" style="position:relative;">
+      <span class="drawer-close" onclick="closeDrawer('drawer-proveedor')">✕</span>
+      <div class="drawer-avatar" id="prov-avatar">MC</div>
+      <div class="drawer-name" id="prov-nombre">Minera del Chocó S.A.S.</div>
+      <div class="drawer-sub" id="prov-detalle">Proveedor de Oro Crudo • Chocó, CO</div>
+      <div class="drawer-badges" id="prov-badges">
+        <span class="badge green">Activo</span>
+        <span class="badge gold">RUCOM</span>
+      </div>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <div class="drawer-section-title">Resumen</div>
+        <div class="drawer-grid">
+          <div class="drawer-stat"><div class="drawer-stat-label">Compras YTD</div><div class="drawer-stat-value gold" id="prov-compras">$1.24M</div></div>
+          <div class="drawer-stat"><div class="drawer-stat-label">Rating</div><div class="drawer-stat-value green" id="prov-rating">4.6/5</div></div>
+          <div class="drawer-stat"><div class="drawer-stat-label">Órdenes Totales</div><div class="drawer-stat-value" id="prov-ordenes">14</div></div>
+          <div class="drawer-stat"><div class="drawer-stat-label">Saldo por Pagar</div><div class="drawer-stat-value" id="prov-saldo" style="color:var(--red)">$14,200</div></div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Información de Contacto</div>
+        <div class="drawer-info-row"><span>Contacto principal</span><span id="prov-contacto">Andrés Ramírez</span></div>
+        <div class="drawer-info-row"><span>Teléfono</span><span id="prov-telefono">+57 312 445 9081</span></div>
+        <div class="drawer-info-row"><span>Email</span><span id="prov-email">contacto@mineradelchoco.co</span></div>
+        <div class="drawer-info-row"><span>NIT / RUC</span><span id="prov-nit">901.234.567-1</span></div>
+        <div class="drawer-info-row"><span>Certificaciones</span><span id="prov-certs">RUC, RUCOM</span></div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Historial Reciente</div>
+        <div class="drawer-timeline" id="prov-timeline">
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-content">
+              <div class="tl-title">OC-2048 — Oro 18K Crudo, 1,200g</div>
+              <div class="tl-desc">Pendiente de aprobación — $105,140</div>
+              <div class="tl-date">10 jun 2026</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot gray"></div>
+            <div class="tl-content">
+              <div class="tl-title">OC-2031 — Oro 18K Crudo, 980g</div>
+              <div class="tl-desc">Recibida y pagada — $86,200</div>
+              <div class="tl-date">28 may 2026</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot gray"></div>
+            <div class="tl-content">
+              <div class="tl-title">Evaluación de calidad</div>
+              <div class="tl-desc">Rating actualizado a 4.6/5</div>
+              <div class="tl-date">15 may 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn secondary" style="flex:1; justify-content:center" onclick="closeDrawer('drawer-proveedor')">Cerrar</button>
+      <button class="btn primary" style="flex:1; justify-content:center" onclick="openModal('modal-compra')">+ Nueva Orden de Compra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer: Cliente -->
+<div class="drawer-overlay" id="drawer-cliente">
+  <div class="drawer">
+    <div class="drawer-head" style="position:relative;">
+      <span class="drawer-close" onclick="closeDrawer('drawer-cliente')">✕</span>
+      <div class="drawer-avatar" id="cli-avatar">BR</div>
+      <div class="drawer-name" id="cli-nombre">Banco de la República</div>
+      <div class="drawer-sub" id="cli-detalle">Institución Financiera • Bogotá</div>
+      <div class="drawer-badges" id="cli-badges">
+        <span class="badge green">Activo</span>
+      </div>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-section">
+        <div class="drawer-section-title">Resumen</div>
+        <div class="drawer-grid">
+          <div class="drawer-stat"><div class="drawer-stat-label">Compras YTD</div><div class="drawer-stat-value gold" id="cli-compras">$2.1M</div></div>
+          <div class="drawer-stat"><div class="drawer-stat-label">Saldo Pendiente</div><div class="drawer-stat-value green" id="cli-saldo">$0</div></div>
+          <div class="drawer-stat"><div class="drawer-stat-label">Órdenes Totales</div><div class="drawer-stat-value" id="cli-ordenes">22</div></div>
+          <div class="drawer-stat"><div class="drawer-stat-label">Límite de Crédito</div><div class="drawer-stat-value" id="cli-credito">N/A</div></div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Información de Contacto</div>
+        <div class="drawer-info-row"><span>Contacto principal</span><span id="cli-contacto">Marcela Duque</span></div>
+        <div class="drawer-info-row"><span>Teléfono</span><span id="cli-telefono">+57 601 343 1111</span></div>
+        <div class="drawer-info-row"><span>Email</span><span id="cli-email">tesoreria@banrep.gov.co</span></div>
+        <div class="drawer-info-row"><span>NIT</span><span id="cli-nit">860.005.235-2</span></div>
+        <div class="drawer-info-row"><span>Material preferente</span><span id="cli-material">Oro 24K Barras</span></div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Historial Reciente</div>
+        <div class="drawer-timeline" id="cli-timeline">
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-content">
+              <div class="tl-title">OV-5239 — Oro 24K, 1,000g</div>
+              <div class="tl-desc">Completada y facturada — $109,000</div>
+              <div class="tl-date">9 jun 2026</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot gray"></div>
+            <div class="tl-content">
+              <div class="tl-title">OV-5198 — Oro 24K, 850g</div>
+              <div class="tl-desc">Completada y facturada — $92,400</div>
+              <div class="tl-date">22 may 2026</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot gray"></div>
+            <div class="tl-content">
+              <div class="tl-title">Renovación de contrato anual</div>
+              <div class="tl-desc">Condiciones comerciales actualizadas</div>
+              <div class="tl-date">3 ene 2026</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn secondary" style="flex:1; justify-content:center" onclick="closeDrawer('drawer-cliente')">Cerrar</button>
+      <button class="btn primary" style="flex:1; justify-content:center" onclick="openModal('modal-venta')">+ Nueva Orden de Venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- Modal Nueva Transacción -->
+<div class="modal-overlay" id="modal-transaccion">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚜ Nueva Transacción</div>
+      <span class="modal-close" onclick="closeModal('modal-transaccion')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Tipo</label><select class="form-select"><option>Compra de material</option><option>Venta de material</option></select></div>
+      <div class="form-group"><label class="form-label">Material</label><select class="form-select"><option>Oro 24K (Refinado)</option><option>Oro 22K (Crudo)</option><option>Oro 18K (Crudo)</option><option>Plata .999</option><option>Platino</option><option>Paladio</option></select></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+        <div class="form-group"><label class="form-label">Peso (gramos)</label><input class="form-input" type="number" placeholder="0.00"></div>
+        <div class="form-group"><label class="form-label">Precio por onza (USD)</label><input class="form-input" type="number" placeholder="0.00"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Contraparte (Proveedor / Cliente)</label><input class="form-input" type="text" placeholder="Buscar..."></div>
+      <div class="form-group"><label class="form-label">Observaciones</label><input class="form-input" type="text" placeholder="Notas adicionales..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-transaccion')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-transaccion'); alert('Transacción creada ✓')">Registrar Transacción</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Lote -->
+<div class="modal-overlay" id="modal-lote">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📦 Registrar Nuevo Lote</div>
+      <span class="modal-close" onclick="closeModal('modal-lote')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Material</label><select class="form-select"><option>Oro</option><option>Plata</option><option>Platino</option><option>Paladio</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Tipo</label><select class="form-select"><option>Crudo / Bruto</option><option>Refinado / Transformado</option></select></div>
+        <div class="form-group"><label class="form-label">Pureza declarada</label><input class="form-input" placeholder="Ej: 99.9% / 24K / .999"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Peso Bruto (g)</label><input class="form-input" type="number"></div>
+        <div class="form-group"><label class="form-label">Ubicación</label><select class="form-select"><option>Planta Medellín</option><option>Mina La Esperanza</option><option>Mina El Progreso</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Origen / Proveedor</label><input class="form-input" placeholder="Nombre del proveedor o mina"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-lote')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-lote'); alert('Lote registrado ✓ — Enviado a Lab para análisis')">Registrar Lote</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nueva OC -->
+<div class="modal-overlay" id="modal-compra">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">↓ Nueva Orden de Compra</div>
+      <span class="modal-close" onclick="closeModal('modal-compra')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Proveedor</label><select class="form-select"><option>Minera del Chocó S.A.S.</option><option>Goldtech Internacional S.A.</option><option>Plata Andina Ltda.</option><option>PlatGroup LATAM</option></select></div>
+      <div class="form-group"><label class="form-label">Material</label><select class="form-select"><option>Oro 18K Crudo</option><option>Oro 22K Crudo</option><option>Plata .999</option><option>Platino Bruto</option><option>Paladio Refinado</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Cantidad (g)</label><input class="form-input" type="number"></div>
+        <div class="form-group"><label class="form-label">Precio pactado (USD/oz)</label><input class="form-input" type="number"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Fecha estimada de entrega</label><input class="form-input" type="date"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-compra')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-compra'); alert('OC creada — Pendiente de aprobación')">Crear Orden de Compra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nueva Venta -->
+<div class="modal-overlay" id="modal-venta">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">↑ Nueva Orden de Venta</div>
+      <span class="modal-close" onclick="closeModal('modal-venta')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Cliente</label><select class="form-select"><option>Banco de la República</option><option>Joyería Oro & Arte</option><option>Global Metals Corp.</option><option>Silver & Sons Ltd.</option></select></div>
+      <div class="form-group"><label class="form-label">Lote a vender</label><select class="form-select"><option>LOT-0092 — Oro 24K — 3,240g disponibles</option><option>LOT-0091 — Plata .999 — 5,198g disponibles</option><option>LOT-0087 — Paladio — 338g disponibles</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Cantidad a vender (g)</label><input class="form-input" type="number"></div>
+        <div class="form-group"><label class="form-label">Precio venta (USD/oz)</label><input class="form-input" type="number"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-venta')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-venta'); alert('Orden de venta creada ✓')">Confirmar Venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Proceso de Transformación -->
+<div class="modal-overlay" id="modal-transformacion">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙ Nueva Orden de Transformación</div>
+      <span class="modal-close" onclick="closeModal('modal-transformacion')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Lote de Origen</label><select class="form-select"><option>LOT-0092 — Oro 18K — 1,800g</option><option>LOT-0089 — Oro 22K — 696g</option></select></div>
+      <div class="form-group"><label class="form-label">Tipo de proceso</label><select class="form-select"><option>Refinación ácida (→ 24K)</option><option>Fusión / Aleación</option><option>Laminado</option><option>Granulación</option><option>Purificación (Plata)</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Cantidad a procesar (g)</label><input class="form-input" type="number"></div>
+        <div class="form-group"><label class="form-label">Responsable</label><select class="form-select"><option>Luis Mejía</option><option>Carlos Vélez</option><option>Ana Torres</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Fecha estimada de finalización</label><input class="form-input" type="date"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-transformacion')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-transformacion'); alert('Orden de transformación creada ✓')">Iniciar Proceso</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Muestra Lab -->
+<div class="modal-overlay" id="modal-muestra">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔬 Registrar Muestra de Laboratorio</div>
+      <span class="modal-close" onclick="closeModal('modal-muestra')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Lote a analizar</label><select class="form-select"><option>LOT-0092 — Oro 18K</option><option>LOT-0089 — Oro 22K</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Método de análisis</label><select class="form-select"><option>Copelación (Fire Assay)</option><option>XRF (Fluorescencia)</option><option>Ensayo de fuego</option><option>Gravimetría</option></select></div>
+        <div class="form-group"><label class="form-label">Analista</label><select class="form-select"><option>M. Sánchez</option><option>P. Restrepo</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Pureza declarada</label><input class="form-input" placeholder="Ej: 99.9%"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-muestra')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-muestra'); alert('Muestra registrada ✓ — En cola de análisis')">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Asiento Contable -->
+<div class="modal-overlay" id="modal-asiento">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📒 Nuevo Asiento Contable</div>
+      <span class="modal-close" onclick="closeModal('modal-asiento')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Cuenta débito</label><select class="form-select"><option>Caja / Bancos</option><option>Inventario — Materia Prima</option><option>Cuentas por Cobrar</option><option>Costo de Transformación</option></select></div>
+        <div class="form-group"><label class="form-label">Cuenta crédito</label><select class="form-select"><option>Ingresos por Venta</option><option>Cuentas por Pagar</option><option>Caja / Bancos</option><option>Inventario — Materia Prima</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Monto (USD)</label><input class="form-input" type="number" placeholder="0.00"></div>
+      <div class="form-group"><label class="form-label">Descripción / Referencia</label><input class="form-input" type="text" placeholder="Ej: Cobro OV-5241"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-asiento')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-asiento'); alert('Asiento contable registrado ✓')">Registrar Asiento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Proveedor -->
+<div class="modal-overlay" id="modal-proveedor">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⬟ Nuevo Proveedor</div>
+      <span class="modal-close" onclick="closeModal('modal-proveedor')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Razón social</label><input class="form-input" type="text" placeholder="Ej: Minera Atlas S.A.S."></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">NIT / RUC</label><input class="form-input" type="text"></div>
+        <div class="form-group"><label class="form-label">País / Región</label><input class="form-input" type="text" placeholder="Ej: Antioquia, CO"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Material principal que provee</label><select class="form-select"><option>Oro Crudo</option><option>Plata Cruda</option><option>Platino Crudo</option><option>Paladio Crudo</option><option>Mixto</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Contacto principal</label><input class="form-input" type="text"></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" type="tel"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email"></div>
+      <div class="form-group"><label class="form-label">Certificaciones</label><input class="form-input" type="text" placeholder="Ej: RUCOM, ISO 9001"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-proveedor')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-proveedor'); alert('Proveedor registrado ✓')">Crear Proveedor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Cliente -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">◎ Nuevo Cliente</div>
+      <span class="modal-close" onclick="closeModal('modal-cliente')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nombre / Razón social</label><input class="form-input" type="text" placeholder="Ej: Joyería Luna S.A.S."></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">NIT / Documento</label><input class="form-input" type="text"></div>
+        <div class="form-group"><label class="form-label">Ciudad</label><input class="form-input" type="text"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Segmento</label><select class="form-select"><option>Joyería / Retail</option><option>Institución Financiera</option><option>Exportador</option><option>Industria</option><option>Particular</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Contacto principal</label><input class="form-input" type="text"></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" type="tel"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email"></div>
+      <div class="form-group"><label class="form-label">¿Otorgar línea de crédito?</label><select class="form-select"><option>No</option><option>Sí</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-cliente')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-cliente'); alert('Cliente registrado ✓')">Crear Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Usuario -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">👤 Nuevo Usuario</div>
+      <span class="modal-close" onclick="closeModal('modal-usuario')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" type="text"></div>
+      <div class="form-group"><label class="form-label">Email corporativo</label><input class="form-input" type="email"></div>
+      <div class="form-group"><label class="form-label">Rol</label><select class="form-select"><option>Superusuario</option><option>Gerente</option><option>Operativo</option><option>Finanzas</option><option>Laboratorio</option><option>Solo lectura</option></select></div>
+      <div class="form-group"><label class="form-label">Módulos con acceso</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer"><input type="checkbox" checked> Dashboard</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer"><input type="checkbox" checked> Inventario</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer"><input type="checkbox"> Compras</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer"><input type="checkbox"> Ventas</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer"><input type="checkbox"> Transformación</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer"><input type="checkbox"> Calidad / Lab</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer"><input type="checkbox"> Finanzas</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer"><input type="checkbox"> Reportes</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal('modal-usuario')">Cancelar</button>
+      <button class="btn primary" onclick="closeModal('modal-usuario'); alert('Usuario creado ✓ — Se envió invitación por email')">Crear Usuario</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── NAVEGACIÓN ──
+const pages = {
+  dashboard: { title: 'Dashboard General', sub: 'Resumen operativo en tiempo real' },
+  inventario: { title: 'Gestión de Inventario', sub: 'Lotes, stocks y valorización' },
+  compras: { title: 'Módulo de Compras', sub: 'Órdenes de compra y proveedores' },
+  ventas: { title: 'Módulo de Ventas', sub: 'Órdenes de venta y clientes' },
+  transformacion: { title: 'Transformación de Materiales', sub: 'Procesos de refinación y conversión' },
+  proveedores: { title: 'Gestión de Proveedores', sub: 'Directorio y evaluación de proveedores' },
+  clientes: { title: 'Gestión de Clientes', sub: 'Directorio y cartera de clientes' },
+  calidad: { title: 'Control de Calidad / Laboratorio', sub: 'Análisis, certificaciones y muestras' },
+  finanzas: { title: 'Contabilidad y Finanzas', sub: 'Libro mayor, balance general y cartera' },
+  reportes: { title: 'Reportes y Análisis', sub: 'Generación de informes y exportaciones' },
+  configuracion: { title: 'Configuración del Sistema', sub: 'Apariencia, módulos, parámetros y usuarios' },
+};
+
+function navigate(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const info = pages[id] || { title: id, sub: '' };
+  document.getElementById('page-title').textContent = info.title;
+  document.getElementById('page-sub').textContent = info.sub;
+  window.scrollTo(0, 0);
+}
+
+// ── SIDEBAR COLLAPSE ──
+let collapsed = false;
+function toggleSidebar() {
+  collapsed = !collapsed;
+  document.getElementById('sidebar').classList.toggle('collapsed', collapsed);
+  document.getElementById('main').classList.toggle('shifted', collapsed);
+}
+
+// ── MODALS ──
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── CONFIGURACIÓN TOGGLES ──
+const modules = [
+  { name: 'Módulo de Compras', on: true },
+  { name: 'Módulo de Ventas', on: true },
+  { name: 'Transformación de Materiales', on: true },
+  { name: 'Control de Calidad / Lab', on: true },
+  { name: 'Gestión de Proveedores', on: true },
+  { name: 'Contabilidad / Finanzas', on: true },
+  { name: 'Reportes y Exportaciones', on: true },
+  { name: 'Integración DIAN / RUCOM', on: false },
+  { name: 'Localización GPS de minas', on: false },
+  { name: 'API de precios spot (XAU/XAG)', on: true },
+];
+const toggleContainer = document.getElementById('toggles');
+if (toggleContainer) {
+  modules.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.style = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)';
+    div.innerHTML = `<span style="font-size:12px;color:var(--text-secondary)">${m.name}</span>
+    <div onclick="this.classList.toggle('on'); this.style.background=this.classList.contains('on')?'var(--gold)':'var(--border)'"
+    style="width:36px;height:20px;border-radius:10px;cursor:pointer;transition:background 0.2s;background:${m.on?'var(--gold)':'var(--border)'};position:relative;${m.on?'':''}">
+    <div style="width:14px;height:14px;border-radius:50%;background:white;position:absolute;top:3px;left:${m.on?'19px':'3px'};transition:left 0.2s"></div></div>`;
+    toggleContainer.appendChild(div);
+  });
+}
+
+// ── DRAWERS: PROVEEDORES Y CLIENTES ──
+const proveedoresData = [
+  { iniciales:'MC', nombre:'Minera del Chocó S.A.S.', detalle:'Proveedor de Oro Crudo • Chocó, CO', estado:'green', estadoTxt:'Activo', certs:'RUC, RUCOM', compras:'$1.24M', rating:'4.6/5', ordenes:'14', saldo:'$14,200', saldoColor:'var(--red)', contacto:'Andrés Ramírez', telefono:'+57 312 445 9081', email:'contacto@mineradelchoco.co', nit:'901.234.567-1' },
+  { iniciales:'GT', nombre:'Goldtech Internacional S.A.', detalle:'Proveedor de Oro / Platino • Bogotá, CO', estado:'green', estadoTxt:'Activo', certs:'ISO 9001, RUC', compras:'$890K', rating:'4.4/5', ordenes:'9', saldo:'$48,320', saldoColor:'var(--red)', contacto:'Laura Jiménez', telefono:'+57 310 220 7744', email:'ventas@goldtech.co', nit:'900.112.334-5' },
+  { iniciales:'PA', nombre:'Plata Andina Ltda.', detalle:'Proveedor de Plata Refinada • Medellín, CO', estado:'green', estadoTxt:'Activo', certs:'RUCOM', compras:'$340K', rating:'3.8/5', ordenes:'11', saldo:'$0', saldoColor:'var(--green)', contacto:'Felipe Ortiz', telefono:'+57 300 556 1290', email:'felipe@plataandina.co', nit:'890.445.221-3' },
+  { iniciales:'PG', nombre:'PlatGroup LATAM', detalle:'Proveedor de Platino / Paladio • Lima, PE', estado:'blue', estadoTxt:'En evaluación', certs:'ISO 9001', compras:'$210K', rating:'4.1/5', ordenes:'5', saldo:'$6,350', saldoColor:'var(--red)', contacto:'Rosa Vargas', telefono:'+51 988 234 091', email:'rvargas@platgroup.pe', nit:'PE-20458821' },
+  { iniciales:'MC', nombre:'Mineros del Cauca', detalle:'Proveedor de Oro Crudo • Cauca, CO', estado:'gray', estadoTxt:'Inactivo', certs:'RUCOM', compras:'$180K', rating:'3.5/5', ordenes:'7', saldo:'$0', saldoColor:'var(--green)', contacto:'Hernán Quintero', telefono:'+57 318 902 4471', email:'hquintero@minerosdelcauca.co', nit:'845.778.902-9' },
+];
+
+const clientesData = [
+  { iniciales:'BR', nombre:'Banco de la República', detalle:'Institución Financiera • Bogotá', estado:'green', estadoTxt:'Activo', compras:'$2.1M', saldo:'$0', saldoColor:'var(--green)', ordenes:'22', credito:'N/A', contacto:'Marcela Duque', telefono:'+57 601 343 1111', email:'tesoreria@banrep.gov.co', nit:'860.005.235-2', material:'Oro 24K Barras' },
+  { iniciales:'JA', nombre:'Joyería Oro & Arte S.A.S.', detalle:'Joyería / Retail • Medellín', estado:'gold', estadoTxt:'Crédito activo', compras:'$480K', saldo:'$28,400', saldoColor:'var(--red)', ordenes:'18', credito:'$50,000', contacto:'Tatiana Restrepo', telefono:'+57 304 778 5512', email:'compras@oroyarte.co', nit:'811.223.456-7', material:'Oro 18K / 24K' },
+  { iniciales:'GM', nombre:'Global Metals Corp.', detalle:'Exportador • Barranquilla', estado:'red', estadoTxt:'Pago pendiente', compras:'$320K', saldo:'$18,680', saldoColor:'var(--red)', ordenes:'10', credito:'$30,000', contacto:'Eduardo Salas', telefono:'+57 315 667 9023', email:'esalas@globalmetals.com', nit:'900.778.123-4', material:'Platino / Paladio' },
+  { iniciales:'SS', nombre:'Silver & Sons Ltd.', detalle:'Industria • Cali', estado:'green', estadoTxt:'Activo', compras:'$210K', saldo:'$0', saldoColor:'var(--green)', ordenes:'8', credito:'N/A', contacto:'Camila Hoyos', telefono:'+57 312 884 0091', email:'choyos@silversons.com', nit:'805.334.778-1', material:'Plata .999' },
+];
+
+function fillDrawer(prefix, d) {
+  document.getElementById(prefix+'-avatar').textContent = d.iniciales;
+  document.getElementById(prefix+'-nombre').textContent = d.nombre;
+  document.getElementById(prefix+'-detalle').textContent = d.detalle;
+  document.getElementById(prefix+'-compras').textContent = d.compras;
+  document.getElementById(prefix+'-ordenes').textContent = d.ordenes;
+  document.getElementById(prefix+'-saldo').textContent = d.saldo;
+  document.getElementById(prefix+'-saldo').style.color = d.saldoColor;
+  document.getElementById(prefix+'-contacto').textContent = d.contacto;
+  document.getElementById(prefix+'-telefono').textContent = d.telefono;
+  document.getElementById(prefix+'-email').textContent = d.email;
+  document.getElementById(prefix+'-nit').textContent = d.nit;
+}
+
+function openProveedor(i) {
+  const d = proveedoresData[i];
+  fillDrawer('prov', d);
+  document.getElementById('prov-rating').textContent = d.rating;
+  document.getElementById('prov-certs').textContent = d.certs;
+  document.getElementById('prov-badges').innerHTML = `<span class="badge ${d.estado}">${d.estadoTxt}</span><span class="badge gold">${d.certs.split(',')[0]}</span>`;
+  document.getElementById('drawer-proveedor').classList.add('open');
+}
+
+function openCliente(i) {
+  const d = clientesData[i];
+  fillDrawer('cli', d);
+  document.getElementById('cli-credito').textContent = d.credito;
+  document.getElementById('cli-material').textContent = d.material;
+  document.getElementById('cli-badges').innerHTML = `<span class="badge ${d.estado}">${d.estadoTxt}</span>`;
+  document.getElementById('drawer-cliente').classList.add('open');
+}
+
+function closeDrawer(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.drawer-overlay').forEach(d => {
+  d.addEventListener('click', e => { if (e.target === d) d.classList.remove('open'); });
+});
+
+// ── TABS: FINANZAS ──
+function switchFinTab(idx, el) {
+  document.querySelectorAll('#page-finanzas .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.fin-tab').forEach((t, i) => t.style.display = i === idx ? 'block' : 'none');
+}
+
+// ── TABS: CONFIGURACIÓN ──
+function switchConfigTab(idx, el) {
+  document.querySelectorAll('#page-configuracion .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.config-tab').forEach((t, i) => t.style.display = i === idx ? 'block' : 'none');
+}
+
+// ── GENERADOR DE REPORTES (vista previa real) ──
+const reportDefs = {
+  inventario: {
+    icon:'📦', title:'Inventario Valorizado', sub:'Stock actual a precios de mercado — por material, pureza y ubicación',
+    rows: [
+      ['Material','Tipo','Pureza','Stock (g)','Precio Mercado/oz','Valor Total'],
+      ['Oro','Refinado','24K (99.9%)','3,240g','$3,342','$348,200'],
+      ['Oro','Crudo','18K (75%)','2,180g','$2,507','$175,800'],
+      ['Plata','Refinado','.999','18,400g','$32.45','$19,180'],
+      ['Platino','Crudo','85%','45g','$1,018','$4,300 ⚠'],
+      ['Paladio','Refinado','99.5%','340g','$1,124','$12,300'],
+    ],
+    total: 'Valor total de inventario: $2,140,000 USD'
+  },
+  pyg: {
+    icon:'📊', title:'Estado de Pérdidas y Ganancias', sub:'Período: Junio 2026',
+    rows: [
+      ['Concepto','Monto'],
+      ['Ingresos por ventas','$4,820,000'],
+      ['Costo de materiales (compras)','-$3,640,000'],
+      ['Costo de transformación','-$84,200'],
+      ['Gastos operativos','-$196,800'],
+      ['Utilidad bruta','$899,000'],
+    ],
+    total: 'Margen neto del período: 18.6% — Utilidad: $899,000 USD'
+  },
+  trazabilidad: {
+    icon:'🔍', title:'Trazabilidad de Lote LOT-0089', sub:'Cadena completa de custodia',
+    rows: [
+      ['Etapa','Fecha','Responsable','Resultado'],
+      ['Recepción — Mina El Progreso','07/06/2026','Logística','760g recibidos'],
+      ['Análisis — LAB-0211','09/06/2026','P. Restrepo','91.8% pureza — Aprobado'],
+      ['Fundición — OT-0088','10/06/2026','Carlos Vélez','En proceso'],
+      ['Refinado proyectado','—','—','Pendiente'],
+      ['Certificación final','—','—','Pendiente'],
+    ],
+    total: 'Estado actual: en proceso de refinación (etapa 3 de 5)'
+  },
+  dian: {
+    icon:'🏛', title:'Informe DIAN / UIAF', sub:'Declaración de operaciones con metales preciosos — Junio 2026',
+    rows: [
+      ['Tipo Operación','Contraparte','Material','Monto USD','Fecha'],
+      ['Compra','Minera del Chocó S.A.S.','Oro 18K Crudo','$105,140','10/06/2026'],
+      ['Venta','Banco de la República','Oro 24K','$109,000','09/06/2026'],
+      ['Compra','PlatGroup LATAM','Platino Bruto','$6,350','07/06/2026'],
+      ['Venta','Global Metals Corp.','Platino','$4,150','10/06/2026'],
+    ],
+    total: 'Total operaciones reportables del período: $224,640 USD — 4 transacciones'
+  },
+  kpis: {
+    icon:'⚡', title:'KPIs Operativos', sub:'Eficiencia de procesos y rendimiento — Junio 2026',
+    rows: [
+      ['Indicador','Valor','Meta','Estado'],
+      ['Eficiencia de refinación','96.4%','≥95%','✓ Cumple'],
+      ['Tiempo promedio de análisis Lab','4.2h','≤6h','✓ Cumple'],
+      ['Rotación de inventario','3.2x/mes','≥3x','✓ Cumple'],
+      ['Rechazos de calidad','5.5%','≤5%','⚠ Revisar'],
+    ],
+    total: '3 de 4 indicadores dentro de meta'
+  },
+  precios: {
+    icon:'📈', title:'Análisis de Precios', sub:'Compra vs Mercado vs Venta — promedio Junio 2026',
+    rows: [
+      ['Material','Precio Compra Prom.','Precio Mercado','Precio Venta Prom.','Margen'],
+      ['Oro 24K','$3,190/oz','$3,342/oz','$3,420/oz','+7.2%'],
+      ['Plata .999','$31.80/oz','$32.45/oz','$32.90/oz','+3.5%'],
+      ['Platino','$990/oz','$1,018/oz','$1,080/oz','+9.1%'],
+      ['Paladio','$1,080/oz','$1,124/oz','$1,150/oz','+6.5%'],
+    ],
+    total: 'Margen promedio ponderado del período: +7.4%'
+  },
+};
+
+function renderReport(key) {
+  const r = reportDefs[key];
+  const brandName = document.getElementById('brand-name')?.textContent || 'AURUM ERP';
+  const tableRows = r.rows.map((row, i) => {
+    const tag = i === 0 ? 'th' : 'td';
+    const cells = row.map(c => `<${tag} style="padding:9px 12px; text-align:left; font-size:12px; ${i===0?'color:var(--text-dim); text-transform:uppercase; font-size:10px; letter-spacing:0.5px; border-bottom:1px solid var(--border);':'color:var(--text-secondary); border-bottom:1px solid rgba(42,42,56,0.5);'}">${c}</${tag}>`).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  const html = `
+    <div class="report-preview">
+      <div class="report-preview-head">
+        <div class="report-brand">
+          <div class="report-brand-icon">${r.icon}</div>
+          <div class="report-title-block">
+            <h2>${r.title}</h2>
+            <span>${r.sub}</span>
+          </div>
+        </div>
+        <div class="report-meta">
+          Generado por: <strong>${brandName}</strong><br>
+          Fecha: <strong>${new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' })}</strong><br>
+          Documento: <strong>RPT-${Math.floor(Math.random()*9000+1000)}</strong>
+        </div>
+      </div>
+      <table style="width:100%; border-collapse:collapse;">${tableRows}</table>
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border); font-size:12px; color:var(--gold); font-weight:600;">
+        ${r.total}
+      </div>
+      <div style="margin-top:18px; display:flex; gap:10px;">
+        <button class="btn primary" onclick="alert('Descargando PDF...')">⬇ Descargar PDF</button>
+        <button class="btn secondary" onclick="alert('Descargando Excel...')">⬇ Descargar Excel</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('report-output').innerHTML = html;
+  document.getElementById('report-output').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ── PERSONALIZACIÓN DE MARCA (branding por empresa, con localStorage) ──
+const DEFAULT_BRAND = {
+  name: 'AURUM ERP',
+  tagline: 'Mining Intelligence',
+  symbol: '⚜',
+  logoImg: null,
+  gold: '#C9A84C',
+  goldLight: '#E8C96A',
+  goldDim: '#7A6228',
+  bg: '#0A0A0B',
+  green: '#3DAA6E',
+  red: '#D45454',
+};
+
+const THEME_PRESETS = {
+  gold:     { gold:'#C9A84C', goldLight:'#E8C96A', goldDim:'#7A6228', bg:'#0A0A0B', green:'#3DAA6E', red:'#D45454' },
+  emerald:  { gold:'#3DAA6E', goldLight:'#5FCB90', goldDim:'#1F5C3E', bg:'#0A0E0C', green:'#C9A84C', red:'#D45454' },
+  platinum: { gold:'#A8B0C0', goldLight:'#D8DCE8', goldDim:'#5A6478', bg:'#0E0E12', green:'#4A7CC7', red:'#D45454' },
+  copper:   { gold:'#C77D4A', goldLight:'#D4A574', goldDim:'#7A4A28', bg:'#120D0A', green:'#3DAA6E', red:'#D45454' },
+};
+
+const STORAGE_KEY = 'aurumerp_branding_v1';
+
+function applyBrandToDOM(brand) {
+  const root = document.documentElement.style;
+  root.setProperty('--gold', brand.gold);
+  root.setProperty('--gold-light', brand.goldLight);
+  root.setProperty('--gold-dim', brand.goldDim);
+  root.setProperty('--bg-deep', brand.bg);
+  root.setProperty('--green', brand.green);
+  root.setProperty('--red', brand.red);
+  // border-gold derives from gold; recompute via inline style on demand is overkill — keep border-gold static-ish
+  document.getElementById('brand-name').textContent = brand.name;
+  document.getElementById('brand-tagline').textContent = brand.tagline;
+  document.getElementById('preview-name').textContent = brand.name;
+  document.getElementById('preview-tagline').textContent = brand.tagline;
+
+  const logoIcon = document.getElementById('brand-logo-icon');
+  const previewLogo = document.getElementById('preview-logo');
+  if (brand.logoImg) {
+    logoIcon.innerHTML = `<img src="${brand.logoImg}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`;
+    previewLogo.innerHTML = `<img src="${brand.logoImg}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
+  } else {
+    logoIcon.textContent = brand.symbol;
+    previewLogo.textContent = brand.symbol;
+  }
+
+  // sync form inputs
+  if (document.getElementById('input-brand-name')) document.getElementById('input-brand-name').value = brand.name;
+  if (document.getElementById('input-brand-tagline')) document.getElementById('input-brand-tagline').value = brand.tagline;
+  if (document.getElementById('input-brand-symbol')) document.getElementById('input-brand-symbol').value = brand.symbol;
+  if (document.getElementById('picker-gold')) { document.getElementById('picker-gold').value = brand.gold; document.getElementById('hex-gold').textContent = brand.gold.toUpperCase(); }
+  if (document.getElementById('picker-bg')) { document.getElementById('picker-bg').value = brand.bg; document.getElementById('hex-bg').textContent = brand.bg.toUpperCase(); }
+  if (document.getElementById('picker-green')) { document.getElementById('picker-green').value = brand.green; document.getElementById('hex-green').textContent = brand.green.toUpperCase(); }
+  if (document.getElementById('picker-red')) { document.getElementById('picker-red').value = brand.red; document.getElementById('hex-red').textContent = brand.red.toUpperCase(); }
+}
+
+function loadBranding() {
+  let brand;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    brand = saved ? JSON.parse(saved) : { ...DEFAULT_BRAND };
+  } catch (e) {
+    brand = { ...DEFAULT_BRAND };
+  }
+  applyBrandToDOM(brand);
+  return brand;
+}
+
+let currentBrand = { ...DEFAULT_BRAND };
+
+function updateColor(cssVar, value, hexLabelId) {
+  document.documentElement.style.setProperty(cssVar, value);
+  document.getElementById(hexLabelId).textContent = value.toUpperCase();
+  // live-sync into current brand draft
+  if (cssVar === '--gold') currentBrand.gold = value;
+  if (cssVar === '--bg-deep') currentBrand.bg = value;
+  if (cssVar === '--green') currentBrand.green = value;
+  if (cssVar === '--red') currentBrand.red = value;
+}
+
+function applyPreset(key, el) {
+  document.querySelectorAll('.theme-preset').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  const preset = THEME_PRESETS[key];
+  currentBrand = { ...currentBrand, ...preset };
+  applyBrandToDOM(currentBrand);
+}
+
+function handleLogoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    currentBrand.logoImg = e.target.result;
+    applyBrandToDOM(currentBrand);
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveBranding() {
+  currentBrand.name = document.getElementById('input-brand-name').value || DEFAULT_BRAND.name;
+  currentBrand.tagline = document.getElementById('input-brand-tagline').value || DEFAULT_BRAND.tagline;
+  currentBrand.symbol = document.getElementById('input-brand-symbol').value || DEFAULT_BRAND.symbol;
+  currentBrand.gold = document.getElementById('picker-gold').value;
+  currentBrand.bg = document.getElementById('picker-bg').value;
+  currentBrand.green = document.getElementById('picker-green').value;
+  currentBrand.red = document.getElementById('picker-red').value;
+  // derive light/dim shades from gold automatically for consistency
+  currentBrand.goldLight = shadeColor(currentBrand.gold, 25);
+  currentBrand.goldDim = shadeColor(currentBrand.gold, -45);
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentBrand));
+  } catch (e) { /* storage unavailable — apply in-memory only */ }
+  applyBrandToDOM(currentBrand);
+  alert('✓ Tema guardado como apariencia exclusiva de tu empresa.');
+}
+
+function resetBranding() {
+  if (!confirm('¿Restaurar la apariencia por defecto del sistema Aurum ERP? Se perderá tu personalización guardada.')) return;
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  currentBrand = { ...DEFAULT_BRAND };
+  document.querySelectorAll('.theme-preset').forEach(p => p.classList.remove('selected'));
+  document.querySelector('.theme-preset').classList.add('selected');
+  applyBrandToDOM(currentBrand);
+}
+
+function shadeColor(hex, percent) {
+  let r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
+  r = Math.min(255, Math.max(0, Math.round(r + (percent/100) * 255)));
+  g = Math.min(255, Math.max(0, Math.round(g + (percent/100) * 255)));
+  b = Math.min(255, Math.max(0, Math.round(b + (percent/100) * 255)));
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+// Cargar marca personalizada al iniciar (o default del sistema si no hay ninguna guardada)
+currentBrand = loadBranding();
+
+
+const prices = { XAU: 3342.80, XAG: 32.45, XPT: 1018.60, XPD: 1124.20 };
+const syms = ['XAU', 'XAG', 'XPT', 'XPD'];
+setInterval(() => {
+  const tickers = document.querySelectorAll('.ticker-item');
+  tickers.forEach((t, i) => {
+    const sym = syms[i];
+    const delta = (Math.random() - 0.49) * 0.8;
+    prices[sym] += delta;
+    const change = ((delta / prices[sym]) * 100).toFixed(2);
+    t.querySelector('.ticker-price').textContent = `$${prices[sym].toFixed(2)}`;
+    const el = t.querySelector('.ticker-change');
+    el.textContent = delta >= 0 ? `▲ +${Math.abs(change)}%` : `▼ -${Math.abs(change)}%`;
+    el.className = 'ticker-change ' + (delta >= 0 ? 'up' : 'down');
+  });
+}, 3000);
+</script>
+</body>
+</html>
