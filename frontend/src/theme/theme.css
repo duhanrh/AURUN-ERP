@@ -1,0 +1,359 @@
+/**
+ * Estilos globales del Design System AURUM ERP.
+ * Portados de la maqueta `erp_mineria_preciosos.html` (layout: sidebar, topbar,
+ * navegación, content). Los tokens de marca (--gold, --bg-deep, etc.) se definen
+ * aquí como valores por defecto y se sobrescriben en runtime por el ThemeProvider.
+ */
+
+:root {
+  /* Tokens de marca (tema Aurum por defecto) — sobreescritos por ThemeProvider */
+  --gold: #c9a84c;
+  --gold-light: #e8c96a;
+  --gold-dim: #7a6228;
+  --bg-deep: #0a0a0b;
+  --green: #3daa6e;
+  --red: #d45454;
+
+  /* Tokens estructurales (constantes) */
+  --bg-panel: #13131a;
+  --bg-card: #1a1a24;
+  --bg-hover: #22222e;
+  --border: #2a2a38;
+  --border-gold: rgba(201, 168, 76, 0.3);
+  --text-primary: #f0ede8;
+  --text-secondary: #8a8a9a;
+  --text-dim: #4a4a5a;
+  --blue: #4a7cc7;
+  --emerald: #2d6b5a;
+  --silver: #a8b0c0;
+  --platinum: #d8dce8;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 240px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: width 0.3s ease;
+}
+.sidebar.collapsed {
+  width: 64px;
+}
+
+.logo-area {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--bg-deep);
+  overflow: hidden;
+}
+.logo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.logo-text {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.logo-text h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.logo-text span {
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.nav-section {
+  padding: 16px 0;
+  flex: 1;
+  overflow-y: auto;
+}
+.nav-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 8px 16px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-left: 2px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+  text-decoration: none;
+}
+.nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.nav-item.active {
+  background: rgba(201, 168, 76, 0.08);
+  color: var(--gold);
+  border-left-color: var(--gold);
+}
+.nav-item .nav-icon {
+  font-size: 16px;
+  min-width: 20px;
+  text-align: center;
+}
+.nav-item .nav-text {
+  font-size: 13px;
+  font-weight: 500;
+}
+.nav-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-dim), var(--emerald));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.user-info {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.user-info .name {
+  font-size: 12px;
+  font-weight: 600;
+}
+.user-info .role {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+.collapse-btn {
+  margin-left: auto;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  background: none;
+  border: none;
+}
+.collapse-btn:hover {
+  color: var(--text-primary);
+}
+
+/* ── MAIN ── */
+.main {
+  margin-left: 240px;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+.main.shifted {
+  margin-left: 64px;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  height: 56px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  flex: 1;
+}
+.topbar-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: block;
+  font-weight: 400;
+}
+
+.ticker-strip {
+  display: flex;
+  gap: 20px;
+  overflow: hidden;
+  font-size: 11px;
+  font-family: 'Space Grotesk', monospace;
+}
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.ticker-symbol {
+  color: var(--gold);
+  font-weight: 700;
+}
+.ticker-price {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.ticker-change.up {
+  color: var(--green);
+}
+.ticker-change.down {
+  color: var(--red);
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.icon-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ── CONTENT ── */
+.content {
+  padding: 24px;
+  flex: 1;
+}
+
+/* ── PLACEHOLDER (páginas aún sin contenido en Fase 1) ── */
+.page-placeholder {
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.page-placeholder .ph-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+.page-placeholder h2 {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.page-placeholder p {
+  font-size: 13px;
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 64px;
+  }
+  .logo-text,
+  .nav-text,
+  .nav-label,
+  .user-info {
+    display: none;
+  }
+  .main {
+    margin-left: 64px;
+  }
+}
