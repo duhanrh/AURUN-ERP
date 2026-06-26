@@ -63,16 +63,24 @@ async def _apply_tenant(session: AsyncSession, tenant_id: uuid.UUID) -> None:
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
-    """Dependencia FastAPI: abre una sesión/transacción con el tenant aplicado.
+    """Dependencia FastAPI: abre una sesión con el tenant aplicado.
 
-    Hace commit al terminar sin error y rollback ante excepción.
+    Hace commit al terminar sin error y rollback ante excepción. Se gestiona la
+    transacción manualmente (en vez de ``session.begin()``) para permitir que un
+    caso de uso confirme un efecto de seguridad —p. ej. revocar una sesión ante
+    reutilización de refresh token— aunque después se propague un 401.
     """
     factory = get_session_factory()
-    async with factory() as session, session.begin():
+    async with factory() as session:
         tenant_id = get_current_tenant_id()
         if tenant_id is not None:
             await _apply_tenant(session, tenant_id)
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 async def dispose_engine() -> None:

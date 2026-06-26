@@ -40,6 +40,16 @@ class ConflictError(DomainError):
     error_code = "conflict"
 
 
+class AuthenticationError(DomainError):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    error_code = "authentication_error"
+
+
+class AuthorizationError(DomainError):
+    status_code = status.HTTP_403_FORBIDDEN
+    error_code = "authorization_error"
+
+
 def _payload(status_code: int, error: str, message: str) -> dict[str, object]:
     return {
         "status_code": status_code,

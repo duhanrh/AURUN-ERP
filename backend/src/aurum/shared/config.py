@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     jwt_access_ttl_seconds: int = 900
     jwt_refresh_ttl_seconds: int = 1209600
 
+    # Token compartido para la API de provisionamiento de plataforma (sección 5.7).
+    # Vacío en local/dev => endpoint abierto; obligatorio fuera de local.
+    platform_admin_token: str = ""
+
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )

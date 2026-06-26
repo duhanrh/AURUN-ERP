@@ -8,7 +8,9 @@ su import de modelos.
 from __future__ import annotations
 
 # Importar (con efecto secundario de registro) los modelos de cada módulo.
+from aurum.modules.auth.infrastructure import models as _auth_models  # noqa: F401
 from aurum.modules.tenants.infrastructure import models as _tenants_models  # noqa: F401
+from aurum.modules.users.infrastructure import models as _users_models  # noqa: F401
 from aurum.shared.infrastructure.base import Base
 
 target_metadata = Base.metadata

@@ -8,13 +8,19 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from aurum.modules.auth.presentation.router import router as auth_router
+from aurum.modules.tenants.presentation.router import router as platform_router
+from aurum.modules.users.presentation.router import roles_router
+from aurum.modules.users.presentation.router import router as users_router
+
 
 def build_api_router(prefix: str) -> APIRouter:
     """Construye el router raíz versionado con todos los módulos montados."""
     api_router = APIRouter(prefix=prefix)
 
-    # Los routers de cada módulo se incluirán aquí. Ejemplo (Fase 2+):
-    # from aurum.modules.auth.presentation.router import router as auth_router
-    # api_router.include_router(auth_router)
+    api_router.include_router(auth_router)
+    api_router.include_router(users_router)
+    api_router.include_router(roles_router)
+    api_router.include_router(platform_router)
 
     return api_router
