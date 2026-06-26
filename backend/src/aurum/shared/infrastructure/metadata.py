@@ -1,0 +1,14 @@
+"""Registro central de metadatos para Alembic.
+
+Importa todos los modelos ORM para que queden registrados en ``Base.metadata``
+y ``alembic revision --autogenerate`` los detecte. Cada módulo nuevo añade aquí
+su import de modelos.
+"""
+
+from __future__ import annotations
+
+# Importar (con efecto secundario de registro) los modelos de cada módulo.
+from aurum.modules.tenants.infrastructure import models as _tenants_models  # noqa: F401
+from aurum.shared.infrastructure.base import Base
+
+target_metadata = Base.metadata

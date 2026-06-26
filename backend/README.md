@@ -15,9 +15,26 @@ de negocio. Ver el documento maestro `../IMPLEMENTACION_AURUM_ERP.md` y el ADR d
 ```bash
 cd backend
 uv sync --extra dev            # crea .venv e instala dependencias
-cp .env.example .env           # ajustar AURUM_DATABASE_URL si hace falta
+cp .env.example .env           # ajustar AURUM_DB_* y POSTGRES_SUPERUSER_PASSWORD
+```
+
+Bootstrap de la base de datos (una sola vez; crea el rol `aurum_app` y la BD
+`aurum_dev`). Requiere la contraseña del superusuario `postgres` en el `.env`:
+
+```bash
+# Crea rol + BD usando psql como superusuario (lee POSTGRES_SUPERUSER_PASSWORD del .env)
+psql -U postgres -h localhost -f ../scripts/db/setup_dev.sql
+uv run alembic upgrade head    # aplica las migraciones como aurum_app
+```
+
+Arranque de la API:
+
+```bash
 uv run uvicorn aurum.main:app --reload   # API en http://localhost:8000
 ```
+
+La conexión se define por componentes en el `.env` (`AURUM_DB_HOST`, `AURUM_DB_PORT`,
+`AURUM_DB_USER`, `AURUM_DB_PASSWORD`, `AURUM_DB_NAME`); `config.py` construye la URL.
 
 - Documentación interactiva: http://localhost:8000/docs
 - Salud: http://localhost:8000/health
