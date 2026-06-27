@@ -77,7 +77,7 @@ async function tryRefresh(): Promise<boolean> {
   return true;
 }
 
-async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   let response = await rawRequest(path, opts);
 
   if (response.status === 401 && opts.auth !== false) {

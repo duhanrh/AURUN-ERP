@@ -14,10 +14,25 @@ import { PlaceholderPage } from './components/PlaceholderPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
+import { PartiesPage } from './features/terceros/PartiesPage';
 import { UsersRolesPage } from './features/users/UsersRolesPage';
 import { queryClient } from './lib/queryClient';
 import { NAV_ITEMS } from './routes/navigation';
 import { ThemeProvider } from './theme/ThemeProvider';
+
+/** Resuelve el componente de página real según el id de navegación (sección 3.3). */
+function pageFor(id: string) {
+  switch (id) {
+    case 'configuracion':
+      return <UsersRolesPage />;
+    case 'proveedores':
+      return <PartiesPage kind="supplier" />;
+    case 'clientes':
+      return <PartiesPage kind="customer" />;
+    default:
+      return <PlaceholderPage />;
+  }
+}
 
 export default function App() {
   return (
@@ -30,13 +45,7 @@ export default function App() {
               <Route element={<AppLayout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 {NAV_ITEMS.map((item) => (
-                  <Route
-                    key={item.id}
-                    path={item.path}
-                    element={
-                      item.id === 'configuracion' ? <UsersRolesPage /> : <PlaceholderPage />
-                    }
-                  />
+                  <Route key={item.id} path={item.path} element={pageFor(item.id)} />
                 ))}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Route>

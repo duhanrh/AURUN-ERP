@@ -56,6 +56,12 @@ PERM_ACCOUNTING_MANUAL_ENTRY = PermissionDef(
 PERM_USERS_MANAGE = PermissionDef(
     "users:manage", "users", "manage", "Gestionar usuarios y roles del tenant"
 )
+PERM_CUSTOMERS_MANAGE = PermissionDef(
+    "customers:manage", "customers", "manage", "Crear y editar clientes (terceros)"
+)
+PERM_SUPPLIERS_MANAGE = PermissionDef(
+    "suppliers:manage", "suppliers", "manage", "Crear y editar proveedores (terceros)"
+)
 
 PERMISSION_CATALOG: tuple[PermissionDef, ...] = (
     PERM_DASHBOARD,
@@ -73,6 +79,8 @@ PERMISSION_CATALOG: tuple[PermissionDef, ...] = (
     PERM_PURCHASE_ORDER_APPROVE,
     PERM_ACCOUNTING_MANUAL_ENTRY,
     PERM_USERS_MANAGE,
+    PERM_CUSTOMERS_MANAGE,
+    PERM_SUPPLIERS_MANAGE,
 )
 
 # Acceso a todos los módulos visibles del ERP (sin Auditoría, reservada a roles altos).
@@ -115,7 +123,13 @@ ROLE_GERENTE = RoleDef(
     "gerente",
     "Gerente",
     "Gestión integral del negocio: todos los módulos y aprobaciones.",
-    (*_ALL_MODULE_ACCESS, PERM_PURCHASE_ORDER_APPROVE, PERM_USERS_MANAGE),
+    (
+        *_ALL_MODULE_ACCESS,
+        PERM_PURCHASE_ORDER_APPROVE,
+        PERM_USERS_MANAGE,
+        PERM_CUSTOMERS_MANAGE,
+        PERM_SUPPLIERS_MANAGE,
+    ),
 )
 ROLE_OPERATIVO = RoleDef(
     "operativo",
@@ -130,6 +144,8 @@ ROLE_OPERATIVO = RoleDef(
         PERM_SUPPLIERS,
         PERM_CUSTOMERS,
         PERM_QUALITY,
+        PERM_CUSTOMERS_MANAGE,
+        PERM_SUPPLIERS_MANAGE,
     ),
 )
 ROLE_FINANZAS = RoleDef(
@@ -145,6 +161,8 @@ ROLE_FINANZAS = RoleDef(
         PERM_PURCHASING,
         PERM_CUSTOMERS,
         PERM_SUPPLIERS,
+        PERM_CUSTOMERS_MANAGE,
+        PERM_SUPPLIERS_MANAGE,
     ),
 )
 ROLE_LABORATORIO = RoleDef(
