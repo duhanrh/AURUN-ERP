@@ -15,6 +15,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
 import { ConfiguracionPage } from './features/config/ConfiguracionPage';
+import { DashboardPage } from './features/dashboard/DashboardPage';
 import { FinanzasPage } from './features/finanzas/FinanzasPage';
 import { InventoryPage } from './features/operacion/InventoryPage';
 import { PurchasingPage } from './features/operacion/PurchasingPage';
@@ -29,6 +30,8 @@ import { ThemeProvider } from './theme/ThemeProvider';
 /** Resuelve el componente de página real según el id de navegación (sección 3.3). */
 function pageFor(id: string) {
   switch (id) {
+    case 'dashboard':
+      return <DashboardPage />;
     case 'configuracion':
       return <ConfiguracionPage />;
     case 'proveedores':

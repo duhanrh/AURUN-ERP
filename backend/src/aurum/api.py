@@ -11,6 +11,7 @@ from fastapi import APIRouter
 from aurum.modules.accounting.presentation.router import router as accounting_router
 from aurum.modules.auth.presentation.router import router as auth_router
 from aurum.modules.config.presentation.router import router as config_router
+from aurum.modules.dashboard.presentation.router import router as dashboard_router
 from aurum.modules.inventory.presentation.router import router as inventory_router
 from aurum.modules.purchasing.presentation.router import router as purchasing_router
 from aurum.modules.quality.presentation.router import router as quality_router
@@ -38,6 +39,7 @@ def build_api_router(prefix: str) -> APIRouter:
     api_router.include_router(quality_router)
     api_router.include_router(accounting_router)
     api_router.include_router(config_router)
+    api_router.include_router(dashboard_router)
     api_router.include_router(platform_router)
 
     return api_router
