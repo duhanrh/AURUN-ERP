@@ -14,6 +14,9 @@ from aurum.modules.auth.presentation.router import router as auth_router
 from aurum.modules.config.presentation.router import router as config_router
 from aurum.modules.dashboard.presentation.router import router as dashboard_router
 from aurum.modules.inventory.presentation.router import router as inventory_router
+from aurum.modules.publicapi.presentation.management_router import (
+    router as api_keys_router,
+)
 from aurum.modules.purchasing.presentation.router import router as purchasing_router
 from aurum.modules.quality.presentation.router import router as quality_router
 from aurum.modules.reports.presentation.router import router as reports_router
@@ -44,6 +47,7 @@ def build_api_router(prefix: str) -> APIRouter:
     api_router.include_router(dashboard_router)
     api_router.include_router(reports_router)
     api_router.include_router(audit_router)
+    api_router.include_router(api_keys_router)
     api_router.include_router(platform_router)
 
     return api_router

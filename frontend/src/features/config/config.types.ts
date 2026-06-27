@@ -37,3 +37,19 @@ export interface ModuleConfig {
   label: string;
   is_active: boolean;
 }
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  is_active: boolean;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  created_at: string | null;
+}
+
+export interface CreatedApiKey {
+  key: ApiKey;
+  full_key: string;
+}

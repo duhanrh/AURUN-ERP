@@ -13,6 +13,7 @@ from aurum.modules.audit.infrastructure import models as _audit_models  # noqa: 
 from aurum.modules.auth.infrastructure import models as _auth_models  # noqa: F401
 from aurum.modules.config.infrastructure import models as _config_models  # noqa: F401
 from aurum.modules.inventory.infrastructure import models as _inventory_models  # noqa: F401
+from aurum.modules.publicapi.infrastructure import models as _publicapi_models  # noqa: F401
 from aurum.modules.purchasing.infrastructure import models as _purchasing_models  # noqa: F401
 from aurum.modules.quality.infrastructure import models as _quality_models  # noqa: F401
 from aurum.modules.sales.infrastructure import models as _sales_models  # noqa: F401

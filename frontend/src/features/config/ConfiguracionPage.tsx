@@ -8,11 +8,12 @@ import { useState } from 'react';
 
 import { useAuthStore } from '../auth/authStore';
 import { UsersRolesPage } from '../users/UsersRolesPage';
+import { ApiKeysTab } from './ApiKeysTab';
 import { AppearanceTab } from './AppearanceTab';
 import { ModulesTab } from './ModulesTab';
 import { ParametersTab } from './ParametersTab';
 
-type Tab = 'apariencia' | 'modulos' | 'parametros' | 'usuarios';
+type Tab = 'apariencia' | 'modulos' | 'parametros' | 'usuarios' | 'apikeys';
 
 export function ConfiguracionPage() {
   const canAccess = useAuthStore((s) => s.hasPermission('configuration:access'));
@@ -43,12 +44,16 @@ export function ConfiguracionPage() {
         <button className={`tab ${tab === 'usuarios' ? 'active' : ''}`} onClick={() => setTab('usuarios')}>
           Usuarios y Roles
         </button>
+        <button className={`tab ${tab === 'apikeys' ? 'active' : ''}`} onClick={() => setTab('apikeys')}>
+          API Keys
+        </button>
       </div>
 
       {tab === 'apariencia' ? <AppearanceTab /> : null}
       {tab === 'modulos' ? <ModulesTab /> : null}
       {tab === 'parametros' ? <ParametersTab /> : null}
       {tab === 'usuarios' ? <UsersRolesPage /> : null}
+      {tab === 'apikeys' ? <ApiKeysTab /> : null}
     </div>
   );
 }

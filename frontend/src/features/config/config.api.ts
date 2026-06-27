@@ -2,8 +2,10 @@
 
 import { request } from '../auth/api';
 import type {
+  ApiKey,
   Branding,
   BusinessParameters,
+  CreatedApiKey,
   ModuleConfig,
   UpdateBrandingInput,
 } from './config.types';
@@ -24,3 +26,11 @@ export const setModule = (key: string, isActive: boolean) =>
     method: 'PUT',
     body: { is_active: isActive },
   });
+
+export const listApiKeys = () => request<ApiKey[]>('/configuration/api-keys');
+export const availableScopes = () =>
+  request<{ scopes: string[] }>('/configuration/api-keys/scopes');
+export const createApiKey = (name: string, scopes: string[]) =>
+  request<CreatedApiKey>('/configuration/api-keys', { method: 'POST', body: { name, scopes } });
+export const revokeApiKey = (id: string) =>
+  request<ApiKey>(`/configuration/api-keys/${id}`, { method: 'DELETE' });
