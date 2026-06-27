@@ -22,7 +22,11 @@ from aurum.shared.errors import register_exception_handlers
 from aurum.shared.health import router as health_router
 from aurum.shared.infrastructure.database import dispose_engine
 from aurum.shared.logging import configure_logging
-from aurum.shared.middleware import RequestContextMiddleware, TenantResolutionMiddleware
+from aurum.shared.middleware import (
+    RequestContextMiddleware,
+    SecurityHeadersMiddleware,
+    TenantResolutionMiddleware,
+)
 
 
 @asynccontextmanager
@@ -51,6 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # RequestContext (request_id) envuelve a la resolución de tenant.
     app.add_middleware(TenantResolutionMiddleware)
     app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

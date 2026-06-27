@@ -30,6 +30,26 @@ REQUEST_ID_HEADER = "X-Request-ID"
 TENANT_HEADER = "X-Tenant-ID"
 
 
+# Cabeceras de endurecimiento aplicadas a toda respuesta (sección 10).
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+}
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Añade cabeceras de seguridad estándar a cada respuesta (sección 10)."""
+
+    async def dispatch(self, request: Request, call_next: RequestHandler) -> Response:
+        response = await call_next(request)
+        for header, value in _SECURITY_HEADERS.items():
+            response.headers.setdefault(header, value)
+        return response
+
+
 class RequestContextMiddleware(BaseHTTPMiddleware):
     """Asigna un ``request_id`` a cada petición y lo devuelve en la respuesta."""
 
