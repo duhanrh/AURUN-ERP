@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from aurum.modules.audit.domain.actions import AUTH_LOGIN_FAILED
+from aurum.modules.audit.presentation.recorder import record_event_isolated
 from aurum.modules.auth.application.services import AuthService
 from aurum.modules.auth.infrastructure.repositories import (
     SqlAlchemyRefreshTokenRepository,
@@ -24,6 +26,7 @@ from aurum.modules.auth.presentation.schemas import (
 )
 from aurum.modules.users.infrastructure.repositories import SqlAlchemyUserRepository
 from aurum.shared.dependencies import get_session, require_tenant_id
+from aurum.shared.errors import AuthenticationError
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -40,10 +43,23 @@ def _build_service(session: AsyncSession, tenant_id: uuid.UUID) -> AuthService:
 @router.post("/login", response_model=TokenResponse)
 async def login(
     payload: LoginRequest,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID = Depends(require_tenant_id),
 ) -> TokenResponse:
-    pair = await _build_service(session, tenant_id).login(payload.email, payload.password)
+    try:
+        pair = await _build_service(session, tenant_id).login(payload.email, payload.password)
+    except AuthenticationError:
+        # Acceso fallido: se audita en una transacción propia (sección 7.18) porque
+        # la de la petición se revierte al propagar el 401.
+        await record_event_isolated(
+            tenant_id,
+            action=AUTH_LOGIN_FAILED,
+            entity_type="auth",
+            request=request,
+            changes={"email": payload.email},
+        )
+        raise
     return TokenResponse(
         access_token=pair.access_token,
         refresh_token=pair.refresh_token,

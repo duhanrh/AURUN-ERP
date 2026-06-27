@@ -1460,6 +1460,31 @@ body {
   }
 }
 
+/* ── AUDITORÍA (Fase 8) ── */
+.audit-filters {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.audit-filters .field {
+  min-width: 160px;
+}
+.audit-mono {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.audit-changes {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .sidebar {

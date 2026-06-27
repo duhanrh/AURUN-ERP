@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aurum.modules.accounting.application.services import AccountingService
@@ -25,7 +25,9 @@ from aurum.modules.accounting.presentation.schemas import (
     PartyBalanceResponse,
     RegisterPaymentRequest,
 )
-from aurum.modules.auth.presentation.dependencies import require_permission
+from aurum.modules.audit.domain.actions import ACCOUNTING_MANUAL_ENTRY
+from aurum.modules.audit.presentation.recorder import record_event
+from aurum.modules.auth.presentation.dependencies import Principal, require_permission
 from aurum.shared.dependencies import get_session, require_tenant_id
 
 router = APIRouter(prefix="/accounting", tags=["accounting"])
@@ -106,15 +108,21 @@ async def payables(
     "/journal",
     response_model=JournalEntryResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[_manual],
 )
 async def create_manual_entry(
     payload: CreateManualEntryRequest,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manual,
 ) -> JournalEntryResponse:
     view = await build_accounting_service(session, tenant_id).create_manual_entry(
         payload.to_dto()
+    )
+    await record_event(
+        session, tenant_id, action=ACCOUNTING_MANUAL_ENTRY, entity_type="journal_entry",
+        entity_id=view.id, principal=principal, request=request,
+        changes={"entry_code": view.entry_code, "memo": view.memo},
     )
     return JournalEntryResponse.from_view(view)
 

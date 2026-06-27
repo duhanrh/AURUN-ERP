@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aurum.modules.accounting.presentation.router import build_accounting_service
-from aurum.modules.auth.presentation.dependencies import require_permission
+from aurum.modules.audit.domain.actions import PURCHASE_ORDER_APPROVE
+from aurum.modules.audit.presentation.recorder import record_event
+from aurum.modules.auth.presentation.dependencies import Principal, require_permission
 from aurum.modules.inventory.application.services import InventoryService
 from aurum.modules.inventory.infrastructure.repositories import (
     SqlAlchemyLotRepository,
@@ -102,10 +104,17 @@ async def create_order(
 )
 async def approve_order(
     order_id: uuid.UUID,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _approve,
 ) -> PurchaseOrderResponse:
     view = await _service(session, tenant_id).approve_order(order_id)
+    await record_event(
+        session, tenant_id, action=PURCHASE_ORDER_APPROVE, entity_type="purchase_order",
+        entity_id=view.id, principal=principal, request=request,
+        changes={"order_code": view.order_code, "total_usd": str(view.total_usd)},
+    )
     return PurchaseOrderResponse.from_view(view)
 
 

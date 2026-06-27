@@ -156,6 +156,7 @@ ROLE_GERENTE = RoleDef(
     "Gestión integral del negocio: todos los módulos y aprobaciones.",
     (
         *_ALL_MODULE_ACCESS,
+        PERM_AUDIT,
         PERM_PURCHASE_ORDER_APPROVE,
         PERM_USERS_MANAGE,
         PERM_CUSTOMERS_MANAGE,

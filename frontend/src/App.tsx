@@ -14,6 +14,7 @@ import { PlaceholderPage } from './components/PlaceholderPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
+import { AuditoriaPage } from './features/auditoria/AuditoriaPage';
 import { ConfiguracionPage } from './features/config/ConfiguracionPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { FinanzasPage } from './features/finanzas/FinanzasPage';
@@ -35,6 +36,8 @@ function pageFor(id: string) {
       return <DashboardPage />;
     case 'configuracion':
       return <ConfiguracionPage />;
+    case 'auditoria':
+      return <AuditoriaPage />;
     case 'proveedores':
       return <PartiesPage kind="supplier" />;
     case 'clientes':

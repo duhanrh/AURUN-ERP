@@ -61,6 +61,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Sistema',
     items: [
       { id: 'configuracion', path: '/configuracion', label: 'Configuración', icon: '✦', title: 'Configuración del Sistema', subtitle: 'Apariencia, módulos, parámetros y usuarios' },
+      { id: 'auditoria', path: '/auditoria', label: 'Auditoría', icon: '◷', title: 'Registro de Auditoría', subtitle: 'Trazabilidad inmutable de operaciones críticas' },
     ],
   },
 ];

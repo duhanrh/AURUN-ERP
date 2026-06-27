@@ -9,6 +9,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from aurum.modules.accounting.presentation.router import router as accounting_router
+from aurum.modules.audit.presentation.router import router as audit_router
 from aurum.modules.auth.presentation.router import router as auth_router
 from aurum.modules.config.presentation.router import router as config_router
 from aurum.modules.dashboard.presentation.router import router as dashboard_router
@@ -42,6 +43,7 @@ def build_api_router(prefix: str) -> APIRouter:
     api_router.include_router(config_router)
     api_router.include_router(dashboard_router)
     api_router.include_router(reports_router)
+    api_router.include_router(audit_router)
     api_router.include_router(platform_router)
 
     return api_router
