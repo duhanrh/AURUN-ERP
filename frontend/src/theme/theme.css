@@ -657,6 +657,26 @@ body {
   background: rgba(138, 138, 154, 0.15);
   color: var(--text-secondary);
 }
+.badge-gold {
+  background: rgba(201, 168, 76, 0.15);
+  color: var(--gold);
+}
+
+/* Botones compactos para acciones en fila (aprobar/rechazar/cancelar) */
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+.row-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.field-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: -4px;
+}
 
 .row-clickable {
   cursor: pointer;

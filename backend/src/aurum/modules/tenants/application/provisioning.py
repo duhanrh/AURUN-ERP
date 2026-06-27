@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from aurum.modules.inventory.domain.catalog import BASE_MATERIALS
+from aurum.modules.inventory.infrastructure.models import Material
 from aurum.modules.tenants.infrastructure.models import Tenant, TenantBranding
 from aurum.modules.users.domain.permissions import BASE_ROLES, PERMISSION_CATALOG, RoleDef
 from aurum.modules.users.infrastructure.models import (
@@ -82,6 +84,7 @@ class ProvisioningService:
         await self._set_tenant_scope(tenant.id)
 
         self._session.add(TenantBranding(tenant_id=tenant.id, is_customized=False))
+        self._seed_materials(tenant.id)
 
         roles_by_slug = self._seed_roles(tenant.id, catalog)
         admin_role = roles_by_slug["superusuario"]
@@ -136,6 +139,19 @@ class ProvisioningService:
             text("SELECT set_config('app.current_tenant_id', :tid, true)"),
             {"tid": str(tenant_id)},
         )
+
+    def _seed_materials(self, tenant_id: uuid.UUID) -> None:
+        """Siembra el catálogo base de materiales del tenant (sección 9)."""
+        for definition in BASE_MATERIALS:
+            self._session.add(
+                Material(
+                    tenant_id=tenant_id,
+                    code=definition.code,
+                    name=definition.name,
+                    symbol=definition.symbol,
+                    is_active=True,
+                )
+            )
 
     def _seed_roles(
         self, tenant_id: uuid.UUID, catalog: dict[str, Permission]

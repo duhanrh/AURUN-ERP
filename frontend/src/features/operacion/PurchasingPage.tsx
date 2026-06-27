@@ -1,0 +1,170 @@
+/**
+ * Módulo de Compras (sección 7.2): KPIs reales + tabla de OC con flujo de
+ * aprobación. Aprobar una OC genera el lote de inventario (lo hace el backend).
+ */
+
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useAuthStore } from '../auth/authStore';
+import {
+  approvePurchaseOrder,
+  createPurchaseOrder,
+  listMaterials,
+  listPurchaseOrders,
+  listSuppliers,
+  purchasingKpis,
+  rejectPurchaseOrder,
+} from './api';
+import { grams, money, purityPct } from './format';
+import { PurchaseOrderFormModal } from './PurchaseOrderFormModal';
+import { PO_STATUS_BADGE, PO_STATUS_LABEL, type CreatePurchaseOrderInput } from './types';
+
+export function PurchasingPage() {
+  const queryClient = useQueryClient();
+  const canRead = useAuthStore((s) => s.hasPermission('purchasing:access'));
+  const canManage = useAuthStore((s) => s.hasPermission('purchasing:manage'));
+  const canApprove = useAuthStore((s) => s.hasPermission('purchase_order:approve'));
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const kpis = useQuery({ queryKey: ['purchasing', 'kpis'], queryFn: purchasingKpis, enabled: canRead });
+  const orders = useQuery({ queryKey: ['purchasing', 'orders'], queryFn: listPurchaseOrders, enabled: canRead });
+  const materials = useQuery({ queryKey: ['materials'], queryFn: listMaterials, enabled: canManage });
+  const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: listSuppliers, enabled: canManage });
+
+  const invalidate = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['purchasing'] });
+    await queryClient.invalidateQueries({ queryKey: ['inventory'] });
+  };
+
+  const createMutation = useMutation({
+    mutationFn: (input: CreatePurchaseOrderInput) => createPurchaseOrder(input),
+    onSuccess: async () => {
+      await invalidate();
+      setModalOpen(false);
+    },
+  });
+  const approveMutation = useMutation({ mutationFn: approvePurchaseOrder, onSuccess: invalidate });
+  const rejectMutation = useMutation({ mutationFn: rejectPurchaseOrder, onSuccess: invalidate });
+
+  if (!canRead) {
+    return (
+      <div className="page-placeholder">
+        <div className="ph-icon">🔒</div>
+        <h2>Sin acceso</h2>
+        <p>No tienes el permiso <code>purchasing:access</code>.</p>
+      </div>
+    );
+  }
+
+  const k = kpis.data;
+
+  return (
+    <div className="module-page">
+      <div className="kpi-grid">
+        <KpiCard label="Monto en órdenes" value={money(k?.total_amount_usd)} variant="gold" />
+        <KpiCard label="Total OC" value={k?.total_orders ?? '—'} variant="" />
+        <KpiCard label="Pendientes aprobación" value={k?.pending_approval ?? '—'} variant="blue" />
+        <KpiCard label="Aprobadas" value={k?.approved ?? '—'} variant="green" />
+      </div>
+
+      <div className="section-head">
+        <div>
+          <h2 className="section-title">Órdenes de compra</h2>
+          <p className="section-subtitle">
+            {orders.data ? `${orders.data.length} orden(es)` : 'Cargando…'}
+          </p>
+        </div>
+        {canManage ? (
+          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+            + Nueva OC
+          </button>
+        ) : null}
+      </div>
+
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>OC #</th>
+              <th>Proveedor</th>
+              <th>Material</th>
+              <th>Cantidad</th>
+              <th>Pureza</th>
+              <th>Precio/oz</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {orders.data?.map((o) => (
+              <tr key={o.id}>
+                <td className="primary">{o.order_code}</td>
+                <td>{o.supplier_name}</td>
+                <td>{o.material_name}</td>
+                <td>{grams(o.quantity_g)}</td>
+                <td>{purityPct(o.declared_purity)}</td>
+                <td>{money(o.price_per_oz)}</td>
+                <td className="gold">{money(o.total_usd)}</td>
+                <td>
+                  <span className={`badge ${PO_STATUS_BADGE[o.status]}`}>
+                    {PO_STATUS_LABEL[o.status]}
+                  </span>
+                </td>
+                <td>
+                  {canApprove && o.status === 'pending_approval' ? (
+                    <div className="row-actions">
+                      <button
+                        className="btn btn-sm btn-primary"
+                        disabled={approveMutation.isPending}
+                        onClick={() => approveMutation.mutate(o.id)}
+                      >
+                        Aprobar
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        disabled={rejectMutation.isPending}
+                        onClick={() => rejectMutation.mutate(o.id)}
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+            {orders.data?.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="empty-row">
+                  Aún no hay órdenes de compra.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+
+      {modalOpen ? (
+        <PurchaseOrderFormModal
+          materials={materials.data ?? []}
+          suppliers={suppliers.data ?? []}
+          submitting={createMutation.isPending}
+          onSubmit={async (input) => {
+            await createMutation.mutateAsync(input);
+          }}
+          onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function KpiCard({ label, value, variant }: { label: string; value: string | number; variant: string }) {
+  return (
+    <div className={`kpi-card ${variant}`}>
+      <span className="kpi-value">{value}</span>
+      <span className="kpi-label">{label}</span>
+    </div>
+  );
+}

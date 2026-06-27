@@ -14,6 +14,9 @@ import { PlaceholderPage } from './components/PlaceholderPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
+import { InventoryPage } from './features/operacion/InventoryPage';
+import { PurchasingPage } from './features/operacion/PurchasingPage';
+import { SalesPage } from './features/operacion/SalesPage';
 import { PartiesPage } from './features/terceros/PartiesPage';
 import { UsersRolesPage } from './features/users/UsersRolesPage';
 import { queryClient } from './lib/queryClient';
@@ -29,6 +32,12 @@ function pageFor(id: string) {
       return <PartiesPage kind="supplier" />;
     case 'clientes':
       return <PartiesPage kind="customer" />;
+    case 'inventario':
+      return <InventoryPage />;
+    case 'compras':
+      return <PurchasingPage />;
+    case 'ventas':
+      return <SalesPage />;
     default:
       return <PlaceholderPage />;
   }
