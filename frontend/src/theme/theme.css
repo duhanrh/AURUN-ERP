@@ -677,6 +677,98 @@ body {
   color: var(--text-secondary);
   margin-top: -4px;
 }
+.row-selected {
+  background: var(--bg-hover);
+}
+.table td.neg {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* ── PIPELINE DE TRANSFORMACIÓN (Fase 5) ── */
+.pipeline-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.pipeline-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.pipeline-steps {
+  display: flex;
+  gap: 0;
+}
+.pipe-step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+.pipe-step::after {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  right: -50%;
+  height: 2px;
+  background: var(--border);
+}
+.pipe-step:last-child::after {
+  display: none;
+}
+.pipe-step.done::after {
+  background: var(--gold-dim);
+}
+.pipe-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bg-panel);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 6px;
+  font-size: 12px;
+  position: relative;
+  z-index: 1;
+}
+.pipe-step.done .pipe-dot {
+  border-color: var(--gold);
+  background: rgba(201, 168, 76, 0.15);
+  color: var(--gold);
+}
+.pipe-step.active .pipe-dot {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--bg-deep);
+}
+.pipe-step.blocked .pipe-dot {
+  border-color: var(--red);
+  background: var(--red);
+  color: var(--text-primary);
+}
+.pipe-step.pending .pipe-dot {
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+.pipe-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.pipe-step.active .pipe-label {
+  color: var(--gold);
+}
+.pipe-step.done .pipe-label {
+  color: var(--text-primary);
+}
 
 .row-clickable {
   cursor: pointer;

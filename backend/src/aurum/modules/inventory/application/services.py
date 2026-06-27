@@ -151,6 +151,19 @@ class InventoryService:
             lot.status = "reserved"
         return lot
 
+    async def is_lot_blocked(self, lot_id: uuid.UUID) -> bool:
+        """Un lote en cuarentena (muestra de lab rechazada) está bloqueado (7.5)."""
+        lot = await self._lots.get(lot_id)
+        return lot is not None and lot.status == "quarantine"
+
+    async def set_lot_status(self, lot_id: uuid.UUID, status: str) -> InventoryLot | None:
+        """Cambia el estado de un lote (p. ej. ``quarantine`` desde Calidad)."""
+        lot = await self._lots.get(lot_id)
+        if lot is None:
+            return None
+        lot.status = status
+        return lot
+
     async def restore_lot(self, lot_id: uuid.UUID, quantity_g: Decimal) -> InventoryLot | None:
         """Devuelve ``quantity_g`` al stock de un lote (cancelación de venta)."""
         lot = await self._lots.get(lot_id)

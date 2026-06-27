@@ -16,7 +16,9 @@ import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
 import { InventoryPage } from './features/operacion/InventoryPage';
 import { PurchasingPage } from './features/operacion/PurchasingPage';
+import { QualityPage } from './features/operacion/QualityPage';
 import { SalesPage } from './features/operacion/SalesPage';
+import { TransformationPage } from './features/operacion/TransformationPage';
 import { PartiesPage } from './features/terceros/PartiesPage';
 import { UsersRolesPage } from './features/users/UsersRolesPage';
 import { queryClient } from './lib/queryClient';
@@ -38,6 +40,10 @@ function pageFor(id: string) {
       return <PurchasingPage />;
     case 'ventas':
       return <SalesPage />;
+    case 'transformacion':
+      return <TransformationPage />;
+    case 'calidad':
+      return <QualityPage />;
     default:
       return <PlaceholderPage />;
   }
