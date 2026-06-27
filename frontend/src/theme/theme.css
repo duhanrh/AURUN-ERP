@@ -1361,6 +1361,105 @@ body {
   }
 }
 
+/* ── REPORTES (Fase 7): grid de tarjetas + vista previa ── */
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.report-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  padding: 16px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.report-card:hover {
+  border-color: var(--border-gold);
+}
+.report-card.selected {
+  border-color: var(--gold);
+}
+.report-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.report-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.report-empty,
+.report-preview {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+}
+.report-empty {
+  color: var(--text-dim);
+  text-align: center;
+}
+.report-brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.report-brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.report-doc-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.report-meta {
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: 'Space Grotesk', monospace;
+}
+.report-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.report-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.report-summary-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-dim);
+}
+.report-summary-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+  font-family: 'Space Grotesk', monospace;
+}
+@media (max-width: 1100px) {
+  .report-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .sidebar {

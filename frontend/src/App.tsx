@@ -17,6 +17,7 @@ import { RequireAuth } from './features/auth/RequireAuth';
 import { ConfiguracionPage } from './features/config/ConfiguracionPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { FinanzasPage } from './features/finanzas/FinanzasPage';
+import { ReportesPage } from './features/reportes/ReportesPage';
 import { InventoryPage } from './features/operacion/InventoryPage';
 import { PurchasingPage } from './features/operacion/PurchasingPage';
 import { QualityPage } from './features/operacion/QualityPage';
@@ -50,6 +51,8 @@ function pageFor(id: string) {
       return <QualityPage />;
     case 'finanzas':
       return <FinanzasPage />;
+    case 'reportes':
+      return <ReportesPage />;
     default:
       return <PlaceholderPage />;
   }
