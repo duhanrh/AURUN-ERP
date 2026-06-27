@@ -10,6 +10,8 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
+from aurum.modules.accounting.application.dto import PurchasePosting
+from aurum.modules.accounting.application.services import AccountingService
 from aurum.modules.inventory.application.dto import NewLot
 from aurum.modules.inventory.application.ports import MaterialRepository
 from aurum.modules.inventory.application.services import InventoryService
@@ -57,12 +59,14 @@ class PurchasingService:
         inventory: InventoryService,
         materials: MaterialRepository,
         suppliers: PartyRepository,
+        accounting: AccountingService,
     ) -> None:
         self._tenant_id = tenant_id
         self._orders = orders
         self._inventory = inventory
         self._materials = materials
         self._suppliers = suppliers
+        self._accounting = accounting
 
     async def list_orders(self) -> list[PurchaseOrderView]:
         return [_to_view(o) for o in await self._orders.list_all()]
@@ -137,6 +141,18 @@ class PurchasingService:
         )
         order.status = "approved"
         order.lot_id = lot.id
+
+        # Asiento automático: Dr Inventario / Cr Cuentas por Pagar (sección 7.12).
+        amount = valuation_usd(order.quantity_g, order.declared_purity, order.price_per_oz)
+        await self._accounting.record_purchase(
+            PurchasePosting(
+                supplier_id=order.supplier_id,
+                supplier_name=order.supplier.legal_name if order.supplier else "—",
+                amount=amount,
+                source_id=order.id,
+                source_code=order.order_code,
+            )
+        )
         return _to_view(order)
 
     async def reject_order(self, order_id: uuid.UUID) -> PurchaseOrderView:

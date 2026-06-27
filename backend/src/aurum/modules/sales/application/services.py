@@ -10,6 +10,8 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
+from aurum.modules.accounting.application.dto import SalePosting
+from aurum.modules.accounting.application.services import AccountingService
 from aurum.modules.inventory.application.services import InventoryService
 from aurum.modules.inventory.domain.valuation import valuation_usd
 from aurum.modules.sales.application.dto import NewSalesOrder, SalesKpis, SalesOrderView
@@ -49,11 +51,13 @@ class SalesService:
         orders: SalesOrderRepository,
         inventory: InventoryService,
         customers: PartyRepository,
+        accounting: AccountingService,
     ) -> None:
         self._tenant_id = tenant_id
         self._orders = orders
         self._inventory = inventory
         self._customers = customers
+        self._accounting = accounting
 
     async def list_orders(self) -> list[SalesOrderView]:
         return [_to_view(o) for o in await self._orders.list_all()]
@@ -86,12 +90,13 @@ class SalesService:
         )
 
     async def create_order(self, data: NewSalesOrder) -> SalesOrderView:
-        if await self._customers.get("customer", data.customer_id) is None:
+        customer = await self._customers.get("customer", data.customer_id)
+        if customer is None:
             raise NotFoundError("Cliente no encontrado.")
 
         # Consume el stock del lote: valida existencia y disponibilidad (puede
         # lanzar InsufficientStockError). El descuento queda en la misma transacción.
-        await self._inventory.consume_lot(data.lot_id, data.quantity_g)
+        lot = await self._inventory.consume_lot(data.lot_id, data.quantity_g)
 
         order = SalesOrder(
             tenant_id=self._tenant_id,
@@ -105,6 +110,21 @@ class SalesService:
         await self._orders.add(order)
         created = await self._orders.get(order.id)
         assert created is not None
+
+        # Asiento automático: Dr CxC / Cr Ingresos + Dr Costo de Ventas / Cr Inventario.
+        # El ingreso usa el precio de venta; el costo, el precio del lote (base de costo).
+        revenue = valuation_usd(data.quantity_g, lot.declared_purity, data.price_per_oz)
+        cost = valuation_usd(data.quantity_g, lot.declared_purity, lot.price_per_oz)
+        await self._accounting.record_sale(
+            SalePosting(
+                customer_id=data.customer_id,
+                customer_name=customer.legal_name,
+                revenue=revenue,
+                cost=cost,
+                source_id=created.id,
+                source_code=created.order_code,
+            )
+        )
         return _to_view(created)
 
     async def set_status(self, order_id: uuid.UUID, new_status: str) -> SalesOrderView:
@@ -116,7 +136,19 @@ class SalesService:
                 f"La orden ya está en estado terminal ({order.status}); no admite cambios."
             )
         if new_status == "cancelled":
-            # Restituye el stock vendido al lote.
+            # Restituye el stock vendido al lote y reversa el asiento contable.
             await self._inventory.restore_lot(order.lot_id, order.quantity_g)
+            purity = order.lot.declared_purity if order.lot else Decimal("0")
+            lot_cost = order.lot.price_per_oz if order.lot else Decimal("0")
+            await self._accounting.reverse_sale(
+                SalePosting(
+                    customer_id=order.customer_id,
+                    customer_name=order.customer.legal_name if order.customer else "—",
+                    revenue=valuation_usd(order.quantity_g, purity, order.price_per_oz),
+                    cost=valuation_usd(order.quantity_g, purity, lot_cost),
+                    source_id=order.id,
+                    source_code=order.order_code,
+                )
+            )
         order.status = new_status
         return _to_view(order)

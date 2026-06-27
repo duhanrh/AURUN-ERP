@@ -77,6 +77,9 @@ PERM_TRANSFORMATION_MANAGE = PermissionDef(
 PERM_QUALITY_MANAGE = PermissionDef(
     "quality:manage", "quality", "manage", "Registrar muestras de laboratorio"
 )
+PERM_TREASURY_MANAGE = PermissionDef(
+    "treasury:manage", "treasury", "manage", "Registrar cobros y pagos de tesorería"
+)
 
 PERMISSION_CATALOG: tuple[PermissionDef, ...] = (
     PERM_DASHBOARD,
@@ -101,6 +104,7 @@ PERMISSION_CATALOG: tuple[PermissionDef, ...] = (
     PERM_SALES_MANAGE,
     PERM_TRANSFORMATION_MANAGE,
     PERM_QUALITY_MANAGE,
+    PERM_TREASURY_MANAGE,
 )
 
 # Acceso a todos los módulos visibles del ERP (sin Auditoría, reservada a roles altos).
@@ -154,6 +158,7 @@ ROLE_GERENTE = RoleDef(
         PERM_SALES_MANAGE,
         PERM_TRANSFORMATION_MANAGE,
         PERM_QUALITY_MANAGE,
+        PERM_TREASURY_MANAGE,
     ),
 )
 ROLE_OPERATIVO = RoleDef(
@@ -194,6 +199,7 @@ ROLE_FINANZAS = RoleDef(
         PERM_SUPPLIERS_MANAGE,
         PERM_PURCHASING_MANAGE,
         PERM_SALES_MANAGE,
+        PERM_TREASURY_MANAGE,
     ),
 )
 ROLE_LABORATORIO = RoleDef(

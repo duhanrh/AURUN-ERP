@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from aurum.modules.accounting.domain.chart import BASE_ACCOUNTS
+from aurum.modules.accounting.infrastructure.models import ChartAccount
 from aurum.modules.inventory.domain.catalog import BASE_MATERIALS
 from aurum.modules.inventory.infrastructure.models import Material
 from aurum.modules.tenants.infrastructure.models import Tenant, TenantBranding
@@ -85,6 +87,7 @@ class ProvisioningService:
 
         self._session.add(TenantBranding(tenant_id=tenant.id, is_customized=False))
         self._seed_materials(tenant.id)
+        self._seed_accounts(tenant.id)
 
         roles_by_slug = self._seed_roles(tenant.id, catalog)
         admin_role = roles_by_slug["superusuario"]
@@ -149,6 +152,20 @@ class ProvisioningService:
                     code=definition.code,
                     name=definition.name,
                     symbol=definition.symbol,
+                    is_active=True,
+                )
+            )
+
+    def _seed_accounts(self, tenant_id: uuid.UUID) -> None:
+        """Siembra el plan de cuentas base del tenant (sección 7.12)."""
+        for definition in BASE_ACCOUNTS:
+            self._session.add(
+                ChartAccount(
+                    tenant_id=tenant_id,
+                    code=definition.code,
+                    name=definition.name,
+                    type=definition.type,
+                    normal_balance=definition.normal_balance,
                     is_active=True,
                 )
             )

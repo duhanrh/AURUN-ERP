@@ -10,6 +10,7 @@ import uuid
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from aurum.modules.accounting.presentation.router import build_accounting_service
 from aurum.modules.auth.presentation.dependencies import require_permission
 from aurum.modules.inventory.application.services import InventoryService
 from aurum.modules.inventory.infrastructure.repositories import (
@@ -44,6 +45,7 @@ def _service(session: AsyncSession, tenant_id: uuid.UUID) -> SalesService:
         orders=SqlAlchemySalesOrderRepository(session),
         inventory=inventory,
         customers=SqlAlchemyPartyRepository(session),
+        accounting=build_accounting_service(session, tenant_id),
     )
 
 

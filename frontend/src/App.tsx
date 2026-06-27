@@ -14,6 +14,7 @@ import { PlaceholderPage } from './components/PlaceholderPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
+import { FinanzasPage } from './features/finanzas/FinanzasPage';
 import { InventoryPage } from './features/operacion/InventoryPage';
 import { PurchasingPage } from './features/operacion/PurchasingPage';
 import { QualityPage } from './features/operacion/QualityPage';
@@ -44,6 +45,8 @@ function pageFor(id: string) {
       return <TransformationPage />;
     case 'calidad':
       return <QualityPage />;
+    case 'finanzas':
+      return <FinanzasPage />;
     default:
       return <PlaceholderPage />;
   }
