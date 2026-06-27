@@ -25,6 +25,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from aurum.modules.accounting.domain.chart import BASE_ACCOUNTS
 from aurum.modules.accounting.infrastructure.models import ChartAccount
+from aurum.modules.config.domain.settings import DEFAULT_PARAMETERS, TOGGLEABLE_MODULES
+from aurum.modules.config.infrastructure.models import (
+    TenantBusinessParameters,
+    TenantModuleConfig,
+)
 from aurum.modules.inventory.domain.catalog import BASE_MATERIALS
 from aurum.modules.inventory.infrastructure.models import Material
 from aurum.modules.tenants.infrastructure.models import Tenant, TenantBranding
@@ -88,6 +93,7 @@ class ProvisioningService:
         self._session.add(TenantBranding(tenant_id=tenant.id, is_customized=False))
         self._seed_materials(tenant.id)
         self._seed_accounts(tenant.id)
+        self._seed_configuration(tenant.id)
 
         roles_by_slug = self._seed_roles(tenant.id, catalog)
         admin_role = roles_by_slug["superusuario"]
@@ -168,6 +174,27 @@ class ProvisioningService:
                     normal_balance=definition.normal_balance,
                     is_active=True,
                 )
+            )
+
+    def _seed_configuration(self, tenant_id: uuid.UUID) -> None:
+        """Siembra parámetros de negocio por defecto y módulos activos (sección 7.17)."""
+        d = DEFAULT_PARAMETERS
+        self._session.add(
+            TenantBusinessParameters(
+                tenant_id=tenant_id,
+                base_currency=d.base_currency,
+                weight_unit=d.weight_unit,
+                min_stock_g=d.min_stock_g,
+                min_margin_pct=d.min_margin_pct,
+                language=d.language,
+                timezone=d.timezone,
+                date_format=d.date_format,
+                regulatory_entity=d.regulatory_entity,
+            )
+        )
+        for module in TOGGLEABLE_MODULES:
+            self._session.add(
+                TenantModuleConfig(tenant_id=tenant_id, module_key=module.key, is_active=True)
             )
 
     def _seed_roles(

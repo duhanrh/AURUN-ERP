@@ -10,6 +10,7 @@ from __future__ import annotations
 # Importar (con efecto secundario de registro) los modelos de cada módulo.
 from aurum.modules.accounting.infrastructure import models as _accounting_models  # noqa: F401
 from aurum.modules.auth.infrastructure import models as _auth_models  # noqa: F401
+from aurum.modules.config.infrastructure import models as _config_models  # noqa: F401
 from aurum.modules.inventory.infrastructure import models as _inventory_models  # noqa: F401
 from aurum.modules.purchasing.infrastructure import models as _purchasing_models  # noqa: F401
 from aurum.modules.quality.infrastructure import models as _quality_models  # noqa: F401

@@ -14,6 +14,7 @@ import { PlaceholderPage } from './components/PlaceholderPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './features/auth/LoginPage';
 import { RequireAuth } from './features/auth/RequireAuth';
+import { ConfiguracionPage } from './features/config/ConfiguracionPage';
 import { FinanzasPage } from './features/finanzas/FinanzasPage';
 import { InventoryPage } from './features/operacion/InventoryPage';
 import { PurchasingPage } from './features/operacion/PurchasingPage';
@@ -21,7 +22,6 @@ import { QualityPage } from './features/operacion/QualityPage';
 import { SalesPage } from './features/operacion/SalesPage';
 import { TransformationPage } from './features/operacion/TransformationPage';
 import { PartiesPage } from './features/terceros/PartiesPage';
-import { UsersRolesPage } from './features/users/UsersRolesPage';
 import { queryClient } from './lib/queryClient';
 import { NAV_ITEMS } from './routes/navigation';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -30,7 +30,7 @@ import { ThemeProvider } from './theme/ThemeProvider';
 function pageFor(id: string) {
   switch (id) {
     case 'configuracion':
-      return <UsersRolesPage />;
+      return <ConfiguracionPage />;
     case 'proveedores':
       return <PartiesPage kind="supplier" />;
     case 'clientes':

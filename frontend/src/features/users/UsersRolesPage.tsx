@@ -41,13 +41,6 @@ export function UsersRolesPage() {
 
   return (
     <div className="config-section">
-      <div className="tab-bar">
-        <div className="tab disabled">Apariencia / Marca</div>
-        <div className="tab disabled">Módulos</div>
-        <div className="tab disabled">Parámetros</div>
-        <div className="tab active">Usuarios y Roles</div>
-      </div>
-
       <div className="section-head">
         <div>
           <h2 className="section-title">Usuarios del tenant</h2>
