@@ -17,7 +17,9 @@ import {
   cancelTransformation,
   completeTransformation,
   createTransformation,
+  deleteTransformation,
   listTransformations,
+  restoreTransformation,
   transformationKpis,
 } from './procesos.api';
 import {
@@ -38,10 +40,15 @@ export function TransformationPage() {
   const canManage = useAuthStore((s) => s.hasPermission('transformation:manage'));
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const kpis = useQuery({ queryKey: ['transformation', 'kpis'], queryFn: transformationKpis, enabled: canRead });
-  const orders = useQuery({ queryKey: ['transformation', 'orders'], queryFn: listTransformations, enabled: canRead });
-  const lots = useQuery({ queryKey: ['inventory', 'lots'], queryFn: listLots, enabled: canManage });
+  const orders = useQuery({
+    queryKey: ['transformation', 'orders', { showDeleted }],
+    queryFn: () => listTransformations(showDeleted),
+    enabled: canRead,
+  });
+  const lots = useQuery({ queryKey: ['inventory', 'lots'], queryFn: () => listLots(), enabled: canManage });
   const materials = useQuery({ queryKey: ['materials'], queryFn: listMaterials, enabled: canManage });
 
   const invalidate = async () => {
@@ -59,6 +66,8 @@ export function TransformationPage() {
   const advanceMutation = useMutation({ mutationFn: advanceTransformation, onSuccess: invalidate });
   const completeMutation = useMutation({ mutationFn: completeTransformation, onSuccess: invalidate });
   const cancelMutation = useMutation({ mutationFn: cancelTransformation, onSuccess: invalidate });
+  const deleteMutation = useMutation({ mutationFn: deleteTransformation, onSuccess: invalidate });
+  const restoreMutation = useMutation({ mutationFn: restoreTransformation, onSuccess: invalidate });
 
   if (!canRead) {
     return (
@@ -133,11 +142,21 @@ export function TransformationPage() {
             {orders.data ? `${orders.data.length} orden(es) · clic para ver el pipeline` : 'Cargando…'}
           </p>
         </div>
-        {canManage ? (
-          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-            + Nueva OT
-          </button>
-        ) : null}
+        <div className="row-actions">
+          <label className="toggle-deleted">
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(e) => setShowDeleted(e.target.checked)}
+            />
+            Mostrar eliminadas
+          </label>
+          {canManage ? (
+            <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+              + Nueva OT
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="table-wrap">
@@ -152,13 +171,14 @@ export function TransformationPage() {
               <th>Rend. est.</th>
               <th>Etapa</th>
               <th>Estado</th>
+              {canManage ? <th /> : null}
             </tr>
           </thead>
           <tbody>
             {orders.data?.map((o) => (
               <tr
                 key={o.id}
-                className={`row-clickable ${o.id === selectedId ? 'row-selected' : ''}`}
+                className={`row-clickable ${o.id === selectedId ? 'row-selected' : ''}${o.is_deleted ? ' row-deleted' : ''}`}
                 onClick={() => setSelectedId(o.id)}
               >
                 <td className="primary">{o.order_code}</td>
@@ -171,15 +191,42 @@ export function TransformationPage() {
                   <span className="badge badge-gold">{STAGE_LABEL[o.stage]}</span>
                 </td>
                 <td>
-                  <span className={`badge ${TS_STATUS_BADGE[o.status]}`}>
-                    {o.blocked ? 'Bloqueada' : TS_STATUS_LABEL[o.status]}
-                  </span>
+                  {o.is_deleted ? (
+                    <span className="badge badge-red">Eliminada</span>
+                  ) : (
+                    <span className={`badge ${TS_STATUS_BADGE[o.status]}`}>
+                      {o.blocked ? 'Bloqueada' : TS_STATUS_LABEL[o.status]}
+                    </span>
+                  )}
                 </td>
+                {canManage ? (
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <div className="row-actions">
+                      {o.is_deleted ? (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          disabled={restoreMutation.isPending}
+                          onClick={() => restoreMutation.mutate(o.id)}
+                        >
+                          Restaurar
+                        </button>
+                      ) : o.status !== 'in_progress' ? (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          disabled={deleteMutation.isPending}
+                          onClick={() => deleteMutation.mutate(o.id)}
+                        >
+                          Eliminar
+                        </button>
+                      ) : null}
+                    </div>
+                  </td>
+                ) : null}
               </tr>
             ))}
             {orders.data?.length === 0 ? (
               <tr>
-                <td colSpan={8} className="empty-row">
+                <td colSpan={canManage ? 9 : 8} className="empty-row">
                   Aún no hay órdenes de transformación.
                 </td>
               </tr>

@@ -10,7 +10,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../auth/authStore';
 import { listLots } from './api';
 import { purityPct } from './format';
-import { createSample, listSamples, qualityKpis } from './procesos.api';
+import {
+  createSample,
+  deleteSample,
+  listSamples,
+  qualityKpis,
+  restoreSample,
+} from './procesos.api';
 import {
   METHOD_LABEL,
   RESULT_BADGE,
@@ -24,19 +30,29 @@ export function QualityPage() {
   const canRead = useAuthStore((s) => s.hasPermission('quality:access'));
   const canManage = useAuthStore((s) => s.hasPermission('quality:manage'));
   const [modalOpen, setModalOpen] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const kpis = useQuery({ queryKey: ['quality', 'kpis'], queryFn: qualityKpis, enabled: canRead });
-  const samples = useQuery({ queryKey: ['quality', 'samples'], queryFn: listSamples, enabled: canRead });
-  const lots = useQuery({ queryKey: ['inventory', 'lots'], queryFn: listLots, enabled: canManage });
+  const samples = useQuery({
+    queryKey: ['quality', 'samples', { showDeleted }],
+    queryFn: () => listSamples(showDeleted),
+    enabled: canRead,
+  });
+  const lots = useQuery({ queryKey: ['inventory', 'lots'], queryFn: () => listLots(), enabled: canManage });
 
+  const invalidate = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['quality'] });
+    await queryClient.invalidateQueries({ queryKey: ['inventory'] });
+  };
   const createMutation = useMutation({
     mutationFn: (input: CreateSampleInput) => createSample(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['quality'] });
-      await queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      await invalidate();
       setModalOpen(false);
     },
   });
+  const deleteMutation = useMutation({ mutationFn: deleteSample, onSuccess: invalidate });
+  const restoreMutation = useMutation({ mutationFn: restoreSample, onSuccess: invalidate });
 
   if (!canRead) {
     return (
@@ -66,11 +82,21 @@ export function QualityPage() {
             {samples.data ? `${samples.data.length} muestra(s)` : 'Cargando…'}
           </p>
         </div>
-        {canManage ? (
-          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-            + Registrar Muestra
-          </button>
-        ) : null}
+        <div className="row-actions">
+          <label className="toggle-deleted">
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(e) => setShowDeleted(e.target.checked)}
+            />
+            Mostrar eliminadas
+          </label>
+          {canManage ? (
+            <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+              + Registrar Muestra
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="table-wrap">
@@ -86,13 +112,14 @@ export function QualityPage() {
               <th>Diferencia</th>
               <th>Analista</th>
               <th>Resultado</th>
+              {canManage ? <th /> : null}
             </tr>
           </thead>
           <tbody>
             {samples.data?.map((s) => {
               const diff = Number(s.difference);
               return (
-                <tr key={s.id}>
+                <tr key={s.id} className={s.is_deleted ? 'row-deleted' : ''}>
                   <td className="primary">{s.sample_code}</td>
                   <td>{s.lot_code}</td>
                   <td>{s.material_name}</td>
@@ -105,14 +132,41 @@ export function QualityPage() {
                   </td>
                   <td>{s.analyst ?? '—'}</td>
                   <td>
-                    <span className={`badge ${RESULT_BADGE[s.result]}`}>{RESULT_LABEL[s.result]}</span>
+                    {s.is_deleted ? (
+                      <span className="badge badge-red">Eliminada</span>
+                    ) : (
+                      <span className={`badge ${RESULT_BADGE[s.result]}`}>{RESULT_LABEL[s.result]}</span>
+                    )}
                   </td>
+                  {canManage ? (
+                    <td>
+                      <div className="row-actions">
+                        {s.is_deleted ? (
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            disabled={restoreMutation.isPending}
+                            onClick={() => restoreMutation.mutate(s.id)}
+                          >
+                            Restaurar
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => deleteMutation.mutate(s.id)}
+                          >
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               );
             })}
             {samples.data?.length === 0 ? (
               <tr>
-                <td colSpan={9} className="empty-row">
+                <td colSpan={canManage ? 10 : 9} className="empty-row">
                   Aún no hay muestras registradas.
                 </td>
               </tr>

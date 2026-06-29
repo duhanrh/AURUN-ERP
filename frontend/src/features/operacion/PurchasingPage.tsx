@@ -10,11 +10,13 @@ import { useAuthStore } from '../auth/authStore';
 import {
   approvePurchaseOrder,
   createPurchaseOrder,
+  deletePurchaseOrder,
   listMaterials,
   listPurchaseOrders,
   listSuppliers,
   purchasingKpis,
   rejectPurchaseOrder,
+  restorePurchaseOrder,
 } from './api';
 import { grams, money, purityPct } from './format';
 import { PurchaseOrderFormModal } from './PurchaseOrderFormModal';
@@ -26,9 +28,14 @@ export function PurchasingPage() {
   const canManage = useAuthStore((s) => s.hasPermission('purchasing:manage'));
   const canApprove = useAuthStore((s) => s.hasPermission('purchase_order:approve'));
   const [modalOpen, setModalOpen] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const kpis = useQuery({ queryKey: ['purchasing', 'kpis'], queryFn: purchasingKpis, enabled: canRead });
-  const orders = useQuery({ queryKey: ['purchasing', 'orders'], queryFn: listPurchaseOrders, enabled: canRead });
+  const orders = useQuery({
+    queryKey: ['purchasing', 'orders', { showDeleted }],
+    queryFn: () => listPurchaseOrders(showDeleted),
+    enabled: canRead,
+  });
   const materials = useQuery({ queryKey: ['materials'], queryFn: listMaterials, enabled: canManage });
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: listSuppliers, enabled: canManage });
 
@@ -46,6 +53,8 @@ export function PurchasingPage() {
   });
   const approveMutation = useMutation({ mutationFn: approvePurchaseOrder, onSuccess: invalidate });
   const rejectMutation = useMutation({ mutationFn: rejectPurchaseOrder, onSuccess: invalidate });
+  const deleteMutation = useMutation({ mutationFn: deletePurchaseOrder, onSuccess: invalidate });
+  const restoreMutation = useMutation({ mutationFn: restorePurchaseOrder, onSuccess: invalidate });
 
   if (!canRead) {
     return (
@@ -75,11 +84,21 @@ export function PurchasingPage() {
             {orders.data ? `${orders.data.length} orden(es)` : 'Cargando…'}
           </p>
         </div>
-        {canManage ? (
-          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-            + Nueva OC
-          </button>
-        ) : null}
+        <div className="row-actions">
+          <label className="toggle-deleted">
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(e) => setShowDeleted(e.target.checked)}
+            />
+            Mostrar eliminadas
+          </label>
+          {canManage ? (
+            <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+              + Nueva OC
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="table-wrap">
@@ -99,7 +118,7 @@ export function PurchasingPage() {
           </thead>
           <tbody>
             {orders.data?.map((o) => (
-              <tr key={o.id}>
+              <tr key={o.id} className={o.is_deleted ? 'row-deleted' : ''}>
                 <td className="primary">{o.order_code}</td>
                 <td>{o.supplier_name}</td>
                 <td>{o.material_name}</td>
@@ -108,29 +127,55 @@ export function PurchasingPage() {
                 <td>{money(o.price_per_oz)}</td>
                 <td className="gold">{money(o.total_usd)}</td>
                 <td>
-                  <span className={`badge ${PO_STATUS_BADGE[o.status]}`}>
-                    {PO_STATUS_LABEL[o.status]}
-                  </span>
+                  {o.is_deleted ? (
+                    <span className="badge badge-red">Eliminada</span>
+                  ) : (
+                    <span className={`badge ${PO_STATUS_BADGE[o.status]}`}>
+                      {PO_STATUS_LABEL[o.status]}
+                    </span>
+                  )}
                 </td>
                 <td>
-                  {canApprove && o.status === 'pending_approval' ? (
-                    <div className="row-actions">
-                      <button
-                        className="btn btn-sm btn-primary"
-                        disabled={approveMutation.isPending}
-                        onClick={() => approveMutation.mutate(o.id)}
-                      >
-                        Aprobar
-                      </button>
+                  <div className="row-actions">
+                    {canApprove && o.status === 'pending_approval' && !o.is_deleted ? (
+                      <>
+                        <button
+                          className="btn btn-sm btn-primary"
+                          disabled={approveMutation.isPending}
+                          onClick={() => approveMutation.mutate(o.id)}
+                        >
+                          Aprobar
+                        </button>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          disabled={rejectMutation.isPending}
+                          onClick={() => rejectMutation.mutate(o.id)}
+                        >
+                          Rechazar
+                        </button>
+                      </>
+                    ) : null}
+                    {canManage && o.is_deleted ? (
                       <button
                         className="btn btn-sm btn-ghost"
-                        disabled={rejectMutation.isPending}
-                        onClick={() => rejectMutation.mutate(o.id)}
+                        disabled={restoreMutation.isPending}
+                        onClick={() => restoreMutation.mutate(o.id)}
                       >
-                        Rechazar
+                        Restaurar
                       </button>
-                    </div>
-                  ) : null}
+                    ) : null}
+                    {canManage &&
+                    !o.is_deleted &&
+                    (o.status === 'pending_approval' || o.status === 'rejected') ? (
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => deleteMutation.mutate(o.id)}
+                      >
+                        Eliminar
+                      </button>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             ))}

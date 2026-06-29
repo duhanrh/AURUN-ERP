@@ -9,9 +9,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../auth/authStore';
 import {
   createSalesOrder,
+  deleteSalesOrder,
   listCustomers,
   listLots,
   listSalesOrders,
+  restoreSalesOrder,
   salesKpis,
   setSalesStatus,
 } from './api';
@@ -24,11 +26,16 @@ export function SalesPage() {
   const canRead = useAuthStore((s) => s.hasPermission('sales:access'));
   const canManage = useAuthStore((s) => s.hasPermission('sales:manage'));
   const [modalOpen, setModalOpen] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const kpis = useQuery({ queryKey: ['sales', 'kpis'], queryFn: salesKpis, enabled: canRead });
-  const orders = useQuery({ queryKey: ['sales', 'orders'], queryFn: listSalesOrders, enabled: canRead });
+  const orders = useQuery({
+    queryKey: ['sales', 'orders', { showDeleted }],
+    queryFn: () => listSalesOrders(showDeleted),
+    enabled: canRead,
+  });
   const customers = useQuery({ queryKey: ['customers'], queryFn: listCustomers, enabled: canManage });
-  const lots = useQuery({ queryKey: ['inventory', 'lots'], queryFn: listLots, enabled: canManage });
+  const lots = useQuery({ queryKey: ['inventory', 'lots'], queryFn: () => listLots(), enabled: canManage });
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ['sales'] });
@@ -50,6 +57,8 @@ export function SalesPage() {
     mutationFn: (id: string) => setSalesStatus(id, 'completed'),
     onSuccess: invalidate,
   });
+  const deleteMutation = useMutation({ mutationFn: deleteSalesOrder, onSuccess: invalidate });
+  const restoreMutation = useMutation({ mutationFn: restoreSalesOrder, onSuccess: invalidate });
 
   if (!canRead) {
     return (
@@ -80,11 +89,21 @@ export function SalesPage() {
             {orders.data ? `${orders.data.length} orden(es)` : 'Cargando…'}
           </p>
         </div>
-        {canManage ? (
-          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-            + Nueva OV
-          </button>
-        ) : null}
+        <div className="row-actions">
+          <label className="toggle-deleted">
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(e) => setShowDeleted(e.target.checked)}
+            />
+            Mostrar eliminadas
+          </label>
+          {canManage ? (
+            <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+              + Nueva OV
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="table-wrap">
@@ -104,7 +123,7 @@ export function SalesPage() {
           </thead>
           <tbody>
             {orders.data?.map((o) => (
-              <tr key={o.id}>
+              <tr key={o.id} className={o.is_deleted ? 'row-deleted' : ''}>
                 <td className="primary">{o.order_code}</td>
                 <td>{o.customer_name}</td>
                 <td>{o.lot_code}</td>
@@ -113,29 +132,53 @@ export function SalesPage() {
                 <td>{money(o.price_per_oz)}</td>
                 <td className="gold">{money(o.total_usd)}</td>
                 <td>
-                  <span className={`badge ${SO_STATUS_BADGE[o.status]}`}>
-                    {SO_STATUS_LABEL[o.status]}
-                  </span>
+                  {o.is_deleted ? (
+                    <span className="badge badge-red">Eliminada</span>
+                  ) : (
+                    <span className={`badge ${SO_STATUS_BADGE[o.status]}`}>
+                      {SO_STATUS_LABEL[o.status]}
+                    </span>
+                  )}
                 </td>
                 <td>
-                  {canManage && !isTerminal(o.status) ? (
-                    <div className="row-actions">
-                      <button
-                        className="btn btn-sm btn-primary"
-                        disabled={completeMutation.isPending}
-                        onClick={() => completeMutation.mutate(o.id)}
-                      >
-                        Completar
-                      </button>
+                  <div className="row-actions">
+                    {canManage && !o.is_deleted && !isTerminal(o.status) ? (
+                      <>
+                        <button
+                          className="btn btn-sm btn-primary"
+                          disabled={completeMutation.isPending}
+                          onClick={() => completeMutation.mutate(o.id)}
+                        >
+                          Completar
+                        </button>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          disabled={cancelMutation.isPending}
+                          onClick={() => cancelMutation.mutate(o.id)}
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    ) : null}
+                    {canManage && o.is_deleted ? (
                       <button
                         className="btn btn-sm btn-ghost"
-                        disabled={cancelMutation.isPending}
-                        onClick={() => cancelMutation.mutate(o.id)}
+                        disabled={restoreMutation.isPending}
+                        onClick={() => restoreMutation.mutate(o.id)}
                       >
-                        Cancelar
+                        Restaurar
                       </button>
-                    </div>
-                  ) : null}
+                    ) : null}
+                    {canManage && !o.is_deleted && o.status === 'cancelled' ? (
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => deleteMutation.mutate(o.id)}
+                      >
+                        Eliminar
+                      </button>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             ))}

@@ -9,11 +9,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../auth/authStore';
 import {
   createLot,
+  deleteLot,
   inventoryKpis,
   listLots,
   listMaterials,
   listSuppliers,
+  restoreLot,
 } from './api';
+import { ApiError } from '../auth/api';
 import { grams, money, purityPct } from './format';
 import { LotFormModal } from './LotFormModal';
 import { LOT_STATUS_BADGE, LOT_STATUS_LABEL, type CreateLotInput } from './types';
@@ -23,19 +26,31 @@ export function InventoryPage() {
   const canRead = useAuthStore((s) => s.hasPermission('inventory:access'));
   const canManage = useAuthStore((s) => s.hasPermission('inventory:manage'));
   const [modalOpen, setModalOpen] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const kpis = useQuery({ queryKey: ['inventory', 'kpis'], queryFn: inventoryKpis, enabled: canRead });
-  const lots = useQuery({ queryKey: ['inventory', 'lots'], queryFn: listLots, enabled: canRead });
+  const lots = useQuery({
+    queryKey: ['inventory', 'lots', { showDeleted }],
+    queryFn: () => listLots(showDeleted),
+    enabled: canRead,
+  });
   const materials = useQuery({ queryKey: ['materials'], queryFn: listMaterials, enabled: canManage });
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: listSuppliers, enabled: canManage });
 
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['inventory'] });
   const createMutation = useMutation({
     mutationFn: (input: CreateLotInput) => createLot(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      await invalidate();
       setModalOpen(false);
     },
   });
+  const deleteMutation = useMutation({
+    mutationFn: deleteLot,
+    onSuccess: invalidate,
+    onError: (e) => alert(e instanceof ApiError ? e.message : 'No se pudo eliminar el lote.'),
+  });
+  const restoreMutation = useMutation({ mutationFn: restoreLot, onSuccess: invalidate });
 
   if (!canRead) {
     return (
@@ -66,11 +81,21 @@ export function InventoryPage() {
             {lots.data ? `${lots.data.length} lote(s)` : 'Cargando…'}
           </p>
         </div>
-        {canManage ? (
-          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-            + Nuevo Lote
-          </button>
-        ) : null}
+        <div className="row-actions">
+          <label className="toggle-deleted">
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(e) => setShowDeleted(e.target.checked)}
+            />
+            Mostrar eliminados
+          </label>
+          {canManage ? (
+            <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+              + Nuevo Lote
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="table-wrap">
@@ -84,11 +109,12 @@ export function InventoryPage() {
               <th>Peso disp.</th>
               <th>Valor est.</th>
               <th>Estado</th>
+              {canManage ? <th /> : null}
             </tr>
           </thead>
           <tbody>
             {lots.data?.map((lot) => (
-              <tr key={lot.id}>
+              <tr key={lot.id} className={lot.is_deleted ? 'row-deleted' : ''}>
                 <td className="primary">{lot.lot_code}</td>
                 <td>{lot.material_name}</td>
                 <td>{lot.form === 'raw' ? 'Crudo' : 'Refinado'}</td>
@@ -96,15 +122,42 @@ export function InventoryPage() {
                 <td>{grams(lot.available_weight_g)}</td>
                 <td className="gold">{money(lot.value_usd)}</td>
                 <td>
-                  <span className={`badge ${LOT_STATUS_BADGE[lot.status]}`}>
-                    {LOT_STATUS_LABEL[lot.status]}
-                  </span>
+                  {lot.is_deleted ? (
+                    <span className="badge badge-red">Eliminado</span>
+                  ) : (
+                    <span className={`badge ${LOT_STATUS_BADGE[lot.status]}`}>
+                      {LOT_STATUS_LABEL[lot.status]}
+                    </span>
+                  )}
                 </td>
+                {canManage ? (
+                  <td>
+                    <div className="row-actions">
+                      {lot.is_deleted ? (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          disabled={restoreMutation.isPending}
+                          onClick={() => restoreMutation.mutate(lot.id)}
+                        >
+                          Restaurar
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          disabled={deleteMutation.isPending}
+                          onClick={() => deleteMutation.mutate(lot.id)}
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                ) : null}
               </tr>
             ))}
             {lots.data?.length === 0 ? (
               <tr>
-                <td colSpan={7} className="empty-row">
+                <td colSpan={canManage ? 8 : 7} className="empty-row">
                   Aún no hay lotes. Crea uno o aprueba una orden de compra.
                 </td>
               </tr>

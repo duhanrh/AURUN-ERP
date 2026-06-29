@@ -31,6 +31,7 @@ export interface Lot {
   supplier_id: string | null;
   entry_date: string | null;
   created_at: string | null;
+  is_deleted: boolean;
 }
 
 export interface InventoryKpis {
@@ -58,6 +59,7 @@ export interface PurchaseOrder {
   status: PurchaseOrderStatus;
   lot_id: string | null;
   created_at: string | null;
+  is_deleted: boolean;
 }
 
 export interface PurchasingKpis {
@@ -82,6 +84,7 @@ export interface SalesOrder {
   status: SalesOrderStatus;
   invoice_number: string | null;
   created_at: string | null;
+  is_deleted: boolean;
 }
 
 export interface SalesKpis {

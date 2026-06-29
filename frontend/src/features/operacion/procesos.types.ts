@@ -33,6 +33,7 @@ export interface TransformationOrder {
   expected_end: string | null;
   output_lot_id: string | null;
   created_at: string | null;
+  is_deleted: boolean;
 }
 
 export interface TransformationKpis {
@@ -56,6 +57,7 @@ export interface QualitySample {
   result: SampleResult;
   sampled_at: string | null;
   created_at: string | null;
+  is_deleted: boolean;
 }
 
 export interface QualityKpis {

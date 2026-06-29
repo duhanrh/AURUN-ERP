@@ -11,7 +11,10 @@ import type {
 } from './procesos.types';
 
 // ── Transformación ──
-export const listTransformations = () => request<TransformationOrder[]>('/transformation/orders');
+export const listTransformations = (includeDeleted = false) =>
+  request<TransformationOrder[]>(
+    `/transformation/orders${includeDeleted ? '?include_deleted=true' : ''}`,
+  );
 export const transformationKpis = () => request<TransformationKpis>('/transformation/kpis');
 export const createTransformation = (input: CreateTransformationInput) =>
   request<TransformationOrder>('/transformation/orders', { method: 'POST', body: input });
@@ -21,9 +24,18 @@ export const completeTransformation = (id: string) =>
   request<TransformationOrder>(`/transformation/orders/${id}/complete`, { method: 'POST' });
 export const cancelTransformation = (id: string) =>
   request<TransformationOrder>(`/transformation/orders/${id}/cancel`, { method: 'POST' });
+export const deleteTransformation = (id: string) =>
+  request<TransformationOrder>(`/transformation/orders/${id}`, { method: 'DELETE' });
+export const restoreTransformation = (id: string) =>
+  request<TransformationOrder>(`/transformation/orders/${id}/restore`, { method: 'POST' });
 
 // ── Calidad ──
-export const listSamples = () => request<QualitySample[]>('/quality/samples');
+export const listSamples = (includeDeleted = false) =>
+  request<QualitySample[]>(`/quality/samples${includeDeleted ? '?include_deleted=true' : ''}`);
 export const qualityKpis = () => request<QualityKpis>('/quality/kpis');
 export const createSample = (input: CreateSampleInput) =>
   request<QualitySample>('/quality/samples', { method: 'POST', body: input });
+export const deleteSample = (id: string) =>
+  request<QualitySample>(`/quality/samples/${id}`, { method: 'DELETE' });
+export const restoreSample = (id: string) =>
+  request<QualitySample>(`/quality/samples/${id}/restore`, { method: 'POST' });
