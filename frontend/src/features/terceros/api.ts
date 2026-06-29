@@ -13,8 +13,9 @@ const RESOURCE: Record<PartyKind, string> = {
   supplier: '/suppliers',
 };
 
-export async function listParties(kind: PartyKind): Promise<Party[]> {
-  return request<Party[]>(RESOURCE[kind]);
+export async function listParties(kind: PartyKind, includeDeleted = false): Promise<Party[]> {
+  const qs = includeDeleted ? '?include_deleted=true' : '';
+  return request<Party[]>(`${RESOURCE[kind]}${qs}`);
 }
 
 export async function fetchKpis(kind: PartyKind): Promise<PartyKpis> {
@@ -31,4 +32,12 @@ export async function updateParty(
   input: Partial<CreatePartyInput>,
 ): Promise<Party> {
   return request<Party>(`${RESOURCE[kind]}/${id}`, { method: 'PATCH', body: input });
+}
+
+export async function deleteParty(kind: PartyKind, id: string): Promise<Party> {
+  return request<Party>(`${RESOURCE[kind]}/${id}`, { method: 'DELETE' });
+}
+
+export async function restoreParty(kind: PartyKind, id: string): Promise<Party> {
+  return request<Party>(`${RESOURCE[kind]}/${id}/restore`, { method: 'POST' });
 }

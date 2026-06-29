@@ -1531,6 +1531,23 @@ body {
   word-break: break-all;
 }
 
+/* ── CRUD / baja lógica (Ola 3) ── */
+.toggle-deleted {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.row-deleted {
+  opacity: 0.55;
+}
+.row-deleted td.primary {
+  text-decoration: line-through;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .sidebar {

@@ -24,6 +24,7 @@ export interface Party {
   preferred_material: string | null;
   credit_limit: number | null;
   created_at: string | null;
+  is_deleted: boolean;
 }
 
 export interface PartyKpis {

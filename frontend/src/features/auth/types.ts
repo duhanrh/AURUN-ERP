@@ -32,6 +32,7 @@ export interface User {
   permissions: string[];
   last_login_at: string | null;
   created_at: string | null;
+  is_deleted: boolean;
 }
 
 export interface CreateUserInput {
@@ -41,4 +42,11 @@ export interface CreateUserInput {
   role_slug: string;
   granted_permissions: string[];
   revoked_permissions: string[];
+}
+
+export interface UpdateUserInput {
+  full_name?: string;
+  role_slug?: string;
+  is_active?: boolean;
+  password?: string;
 }

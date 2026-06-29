@@ -9,7 +9,14 @@
 
 import { API_BASE_URL, API_PREFIX } from '../../lib/config';
 import { useAuthStore } from './authStore';
-import type { CreateUserInput, Principal, Role, TokenPair, User } from './types';
+import type {
+  CreateUserInput,
+  Principal,
+  Role,
+  TokenPair,
+  UpdateUserInput,
+  User,
+} from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -108,12 +115,24 @@ export async function logout(refreshToken: string): Promise<void> {
   await request<void>('/auth/logout', { method: 'POST', body: { refresh_token: refreshToken } });
 }
 
-export async function listUsers(): Promise<User[]> {
-  return request<User[]>('/users');
+export async function listUsers(includeDeleted = false): Promise<User[]> {
+  return request<User[]>(`/users${includeDeleted ? '?include_deleted=true' : ''}`);
 }
 
 export async function createUser(input: CreateUserInput): Promise<User> {
   return request<User>('/users', { method: 'POST', body: input });
+}
+
+export async function updateUser(id: string, input: UpdateUserInput): Promise<User> {
+  return request<User>(`/users/${id}`, { method: 'PATCH', body: input });
+}
+
+export async function deleteUser(id: string): Promise<User> {
+  return request<User>(`/users/${id}`, { method: 'DELETE' });
+}
+
+export async function restoreUser(id: string): Promise<User> {
+  return request<User>(`/users/${id}/restore`, { method: 'POST' });
 }
 
 export async function listRoles(): Promise<Role[]> {

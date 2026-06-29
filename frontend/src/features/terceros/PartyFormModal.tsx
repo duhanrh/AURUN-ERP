@@ -7,7 +7,7 @@
 import { useState, type FormEvent } from 'react';
 
 import { ApiError } from '../auth/api';
-import type { CreatePartyInput, PartyKind, PartyStatus } from './types';
+import type { CreatePartyInput, Party, PartyKind, PartyStatus } from './types';
 
 const CUSTOMER_SEGMENTS = [
   'Joyería / Retail',
@@ -26,27 +26,29 @@ const STATUS_OPTIONS: { value: PartyStatus; label: string }[] = [
 interface PartyFormModalProps {
   kind: PartyKind;
   submitting: boolean;
+  initial?: Party | null;
   onSubmit: (input: CreatePartyInput) => Promise<void>;
   onClose: () => void;
 }
 
-export function PartyFormModal({ kind, submitting, onSubmit, onClose }: PartyFormModalProps) {
+export function PartyFormModal({ kind, submitting, initial, onSubmit, onClose }: PartyFormModalProps) {
   const isSupplier = kind === 'supplier';
+  const isEdit = Boolean(initial);
   const [form, setForm] = useState({
-    legal_name: '',
-    tax_id: '',
-    status: 'active' as PartyStatus,
-    country: '',
-    city: '',
-    contact_name: '',
-    phone: '',
-    email: '',
-    main_material: '',
-    certifications: '',
-    rating: '',
-    segment: CUSTOMER_SEGMENTS[0],
-    preferred_material: '',
-    credit_limit: '',
+    legal_name: initial?.legal_name ?? '',
+    tax_id: initial?.tax_id ?? '',
+    status: (initial?.status ?? 'active') as PartyStatus,
+    country: initial?.country ?? '',
+    city: initial?.city ?? '',
+    contact_name: initial?.contact_name ?? '',
+    phone: initial?.phone ?? '',
+    email: initial?.email ?? '',
+    main_material: initial?.main_material ?? '',
+    certifications: initial?.certifications ?? '',
+    rating: initial?.rating != null ? String(initial.rating) : '',
+    segment: initial?.segment ?? CUSTOMER_SEGMENTS[0],
+    preferred_material: initial?.preferred_material ?? '',
+    credit_limit: initial?.credit_limit != null ? String(initial.credit_limit) : '',
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -96,7 +98,15 @@ export function PartyFormModal({ kind, submitting, onSubmit, onClose }: PartyFor
     <div className="modal-overlay" onClick={onClose}>
       <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
         <div className="modal-header">
-          <h3>{isSupplier ? 'Nuevo Proveedor' : 'Nuevo Cliente'}</h3>
+          <h3>
+            {isEdit
+              ? isSupplier
+                ? 'Editar Proveedor'
+                : 'Editar Cliente'
+              : isSupplier
+                ? 'Nuevo Proveedor'
+                : 'Nuevo Cliente'}
+          </h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar">
             ✕
           </button>
@@ -239,7 +249,13 @@ export function PartyFormModal({ kind, submitting, onSubmit, onClose }: PartyFor
             Cancelar
           </button>
           <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'Guardando…' : isSupplier ? 'Crear proveedor' : 'Crear cliente'}
+            {submitting
+              ? 'Guardando…'
+              : isEdit
+                ? 'Guardar cambios'
+                : isSupplier
+                  ? 'Crear proveedor'
+                  : 'Crear cliente'}
           </button>
         </div>
       </form>

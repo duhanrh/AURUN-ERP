@@ -11,7 +11,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuthStore } from '../auth/authStore';
-import { createParty, fetchKpis, listParties } from './api';
+import { createParty, deleteParty, fetchKpis, listParties, restoreParty, updateParty } from './api';
 import { DetailDrawer, type DrawerSection, type DrawerStat } from './DetailDrawer';
 import { PartyFormModal } from './PartyFormModal';
 import { STATUS_BADGE, STATUS_LABEL, type CreatePartyInput, type Party, type PartyKind } from './types';
@@ -42,11 +42,13 @@ export function PartiesPage({ kind }: PartiesPageProps) {
   const canManage = useAuthStore((s) => s.hasPermission(`${resource}:manage`));
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Party | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [selected, setSelected] = useState<Party | null>(null);
 
   const listQuery = useQuery({
-    queryKey: [resource],
-    queryFn: () => listParties(kind),
+    queryKey: [resource, { showDeleted }],
+    queryFn: () => listParties(kind, showDeleted),
     enabled: canRead,
   });
   const kpisQuery = useQuery({
@@ -55,12 +57,30 @@ export function PartiesPage({ kind }: PartiesPageProps) {
     enabled: canRead,
   });
 
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: [resource] });
+
   const createMutation = useMutation({
     mutationFn: (input: CreatePartyInput) => createParty(kind, input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: [resource] });
+      await invalidate();
       setModalOpen(false);
     },
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: CreatePartyInput }) =>
+      updateParty(kind, id, input),
+    onSuccess: async () => {
+      await invalidate();
+      setEditing(null);
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteParty(kind, id),
+    onSuccess: invalidate,
+  });
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => restoreParty(kind, id),
+    onSuccess: invalidate,
   });
 
   const drawer = useMemo(() => (selected ? buildDrawer(selected, isSupplier) : null), [selected, isSupplier]);
@@ -96,11 +116,21 @@ export function PartiesPage({ kind }: PartiesPageProps) {
             {listQuery.data ? `${listQuery.data.length} ${entity}(s) registrados` : 'Cargando…'}
           </p>
         </div>
-        {canManage ? (
-          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-            + Nuevo {isSupplier ? 'Proveedor' : 'Cliente'}
-          </button>
-        ) : null}
+        <div className="row-actions">
+          <label className="toggle-deleted">
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(e) => setShowDeleted(e.target.checked)}
+            />
+            Mostrar eliminados
+          </label>
+          {canManage ? (
+            <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
+              + Nuevo {isSupplier ? 'Proveedor' : 'Cliente'}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {listQuery.isError ? (
@@ -117,11 +147,16 @@ export function PartiesPage({ kind }: PartiesPageProps) {
               <th>Contacto</th>
               <th>{isSupplier ? 'Rating' : 'Crédito'}</th>
               <th>Estado</th>
+              {canManage ? <th /> : null}
             </tr>
           </thead>
           <tbody>
             {listQuery.data?.map((party) => (
-              <tr key={party.id} className="row-clickable" onClick={() => setSelected(party)}>
+              <tr
+                key={party.id}
+                className={`row-clickable${party.is_deleted ? ' row-deleted' : ''}`}
+                onClick={() => setSelected(party)}
+              >
                 <td className="primary">{party.legal_name}</td>
                 <td>{party.tax_id}</td>
                 <td>{(isSupplier ? party.main_material : party.segment) ?? '—'}</td>
@@ -136,15 +171,47 @@ export function PartiesPage({ kind }: PartiesPageProps) {
                       : 'N/A'}
                 </td>
                 <td>
-                  <span className={`badge ${STATUS_BADGE[party.status]}`}>
-                    {STATUS_LABEL[party.status]}
-                  </span>
+                  {party.is_deleted ? (
+                    <span className="badge badge-red">Eliminado</span>
+                  ) : (
+                    <span className={`badge ${STATUS_BADGE[party.status]}`}>
+                      {STATUS_LABEL[party.status]}
+                    </span>
+                  )}
                 </td>
+                {canManage ? (
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <div className="row-actions">
+                      {party.is_deleted ? (
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          disabled={restoreMutation.isPending}
+                          onClick={() => restoreMutation.mutate(party.id)}
+                        >
+                          Restaurar
+                        </button>
+                      ) : (
+                        <>
+                          <button className="btn btn-sm btn-ghost" onClick={() => setEditing(party)}>
+                            Editar
+                          </button>
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => deleteMutation.mutate(party.id)}
+                          >
+                            Eliminar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                ) : null}
               </tr>
             ))}
             {listQuery.data?.length === 0 ? (
               <tr>
-                <td colSpan={6} className="empty-row">
+                <td colSpan={canManage ? 7 : 6} className="empty-row">
                   Aún no hay {entity}s registrados.
                 </td>
               </tr>
@@ -174,6 +241,18 @@ export function PartiesPage({ kind }: PartiesPageProps) {
             await createMutation.mutateAsync(input);
           }}
           onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+
+      {editing ? (
+        <PartyFormModal
+          kind={kind}
+          initial={editing}
+          submitting={updateMutation.isPending}
+          onSubmit={async (input) => {
+            await updateMutation.mutateAsync({ id: editing.id, input });
+          }}
+          onClose={() => setEditing(null)}
         />
       ) : null}
     </div>
