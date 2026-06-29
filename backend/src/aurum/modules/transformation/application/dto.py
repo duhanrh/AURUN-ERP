@@ -34,6 +34,17 @@ class TransformationOrderView:
     expected_end: date | None
     output_lot_id: uuid.UUID | None
     created_at: datetime | None
+    is_deleted: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class TransformationOrderPatch:
+    """Cambios de una OT; sólo editable mientras esté ``in_progress``."""
+
+    responsible: str | None = None
+    started_at: date | None = None
+    expected_end: date | None = None
+    fields_set: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)

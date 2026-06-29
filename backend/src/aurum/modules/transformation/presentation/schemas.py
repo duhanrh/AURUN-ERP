@@ -12,6 +12,7 @@ from aurum.modules.inventory.domain.valuation import LotForm
 from aurum.modules.transformation.application.dto import (
     NewTransformationOrder,
     TransformationKpis,
+    TransformationOrderPatch,
     TransformationOrderView,
 )
 from aurum.modules.transformation.domain.pipeline import Process
@@ -39,6 +40,7 @@ class TransformationOrderResponse(BaseModel):
     expected_end: date | None
     output_lot_id: uuid.UUID | None
     created_at: datetime | None
+    is_deleted: bool = False
 
     @classmethod
     def from_view(cls, v: TransformationOrderView) -> TransformationOrderResponse:
@@ -64,6 +66,7 @@ class TransformationOrderResponse(BaseModel):
             expected_end=v.expected_end,
             output_lot_id=v.output_lot_id,
             created_at=v.created_at,
+            is_deleted=v.is_deleted,
         )
 
 
@@ -107,4 +110,18 @@ class CreateTransformationOrderRequest(BaseModel):
             responsible=self.responsible,
             started_at=self.started_at,
             expected_end=self.expected_end,
+        )
+
+
+class UpdateTransformationOrderRequest(BaseModel):
+    responsible: str | None = Field(default=None, max_length=160)
+    started_at: date | None = None
+    expected_end: date | None = None
+
+    def to_patch(self) -> TransformationOrderPatch:
+        return TransformationOrderPatch(
+            responsible=self.responsible,
+            started_at=self.started_at,
+            expected_end=self.expected_end,
+            fields_set=frozenset(self.model_fields_set),
         )

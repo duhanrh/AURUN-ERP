@@ -29,6 +29,21 @@ class PurchaseOrderView:
     status: PurchaseOrderStatus
     lot_id: uuid.UUID | None
     created_at: datetime | None
+    is_deleted: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class PurchaseOrderPatch:
+    """Cambios de una OC; sólo editable mientras esté ``pending_approval``."""
+
+    quantity_g: Decimal | None = None
+    declared_purity: Decimal | None = None
+    price_per_oz: Decimal | None = None
+    form: LotForm | None = None
+    location: str | None = None
+    expected_delivery: date | None = None
+    notes: str | None = None
+    fields_set: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)

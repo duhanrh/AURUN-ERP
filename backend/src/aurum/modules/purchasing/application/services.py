@@ -8,6 +8,7 @@ aprobarse o rechazarse (invariante de estado).
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from aurum.modules.accounting.application.dto import PurchasePosting
@@ -18,6 +19,7 @@ from aurum.modules.inventory.application.services import InventoryService
 from aurum.modules.inventory.domain.valuation import valuation_usd
 from aurum.modules.purchasing.application.dto import (
     NewPurchaseOrder,
+    PurchaseOrderPatch,
     PurchaseOrderView,
     PurchasingKpis,
 )
@@ -27,6 +29,9 @@ from aurum.modules.purchasing.infrastructure.models import PurchaseOrder
 from aurum.modules.terceros.application.ports import PartyRepository
 from aurum.shared.codes import generate_code
 from aurum.shared.errors import ConflictError, NotFoundError
+
+# Una OC sólo puede editarse/eliminarse antes de afectar inventario/contabilidad.
+_DELETABLE_STATUSES = ("pending_approval", "rejected")
 
 
 def _to_view(order: PurchaseOrder) -> PurchaseOrderView:
@@ -47,6 +52,7 @@ def _to_view(order: PurchaseOrder) -> PurchaseOrderView:
         status=order.status,  # type: ignore[arg-type]
         lot_id=order.lot_id,
         created_at=order.created_at,
+        is_deleted=order.deleted_at is not None,
     )
 
 
@@ -68,8 +74,8 @@ class PurchasingService:
         self._suppliers = suppliers
         self._accounting = accounting
 
-    async def list_orders(self) -> list[PurchaseOrderView]:
-        return [_to_view(o) for o in await self._orders.list_all()]
+    async def list_orders(self, *, include_deleted: bool = False) -> list[PurchaseOrderView]:
+        return [_to_view(o) for o in await self._orders.list_all(include_deleted=include_deleted)]
 
     async def get_order(self, order_id: uuid.UUID) -> PurchaseOrderView:
         order = await self._orders.get(order_id)
@@ -165,3 +171,49 @@ class PurchasingService:
             )
         order.status = "rejected"
         return _to_view(order)
+
+    async def update_order(
+        self, order_id: uuid.UUID, patch: PurchaseOrderPatch
+    ) -> PurchaseOrderView:
+        order = await self._require(order_id)
+        if order.status != APPROVABLE_FROM:
+            raise ConflictError(
+                f"Sólo se puede editar una OC pendiente (estado actual: {order.status})."
+            )
+        for attr in (
+            "quantity_g",
+            "declared_purity",
+            "price_per_oz",
+            "form",
+            "location",
+            "expected_delivery",
+            "notes",
+        ):
+            if attr in patch.fields_set:
+                setattr(order, attr, getattr(patch, attr))
+        return _to_view(order)
+
+    async def delete_order(self, order_id: uuid.UUID) -> PurchaseOrderView:
+        order = await self._require(order_id)
+        if order.status not in _DELETABLE_STATUSES:
+            raise ConflictError(
+                "Sólo se puede eliminar una OC pendiente o rechazada; "
+                "una aprobada ya generó lote y asiento."
+            )
+        order.deleted_at = datetime.now(UTC).replace(tzinfo=None)
+        return _to_view(order)
+
+    async def restore_order(self, order_id: uuid.UUID) -> PurchaseOrderView:
+        order = await self._orders.get(order_id, include_deleted=True)
+        if order is None:
+            raise NotFoundError("Orden de compra no encontrada.")
+        if order.deleted_at is None:
+            raise ConflictError("La OC no está eliminada.")
+        order.deleted_at = None
+        return _to_view(order)
+
+    async def _require(self, order_id: uuid.UUID) -> PurchaseOrder:
+        order = await self._orders.get(order_id)
+        if order is None:
+            raise NotFoundError("Orden de compra no encontrada.")
+        return order

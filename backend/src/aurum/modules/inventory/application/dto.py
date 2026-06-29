@@ -55,6 +55,16 @@ class LotView:
     supplier_id: uuid.UUID | None
     entry_date: date | None
     created_at: datetime | None
+    is_deleted: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class LotPatch:
+    """Cambios de un lote (ubicación, estado de negocio)."""
+
+    location: str | None = None
+    status: LotStatus | None = None
+    fields_set: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)

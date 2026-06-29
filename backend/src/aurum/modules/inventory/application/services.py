@@ -13,6 +13,7 @@ from decimal import Decimal
 
 from aurum.modules.inventory.application.dto import (
     InventoryKpis,
+    LotPatch,
     LotView,
     MaterialPatch,
     MaterialView,
@@ -65,6 +66,7 @@ def _lot_to_view(lot: InventoryLot) -> LotView:
         supplier_id=lot.supplier_id,
         entry_date=lot.entry_date,
         created_at=lot.created_at,
+        is_deleted=lot.deleted_at is not None,
     )
 
 
@@ -135,13 +137,45 @@ class InventoryService:
         material.deleted_at = None
         return _material_to_view(material)
 
-    async def list_lots(self) -> list[LotView]:
-        return [_lot_to_view(lot) for lot in await self._lots.list_all()]
+    async def list_lots(self, *, include_deleted: bool = False) -> list[LotView]:
+        lots = await self._lots.list_all(include_deleted=include_deleted)
+        return [_lot_to_view(lot) for lot in lots]
 
     async def get_lot(self, lot_id: uuid.UUID) -> LotView:
         lot = await self._lots.get(lot_id)
         if lot is None:
             raise NotFoundError("Lote no encontrado.")
+        return _lot_to_view(lot)
+
+    async def update_lot(self, lot_id: uuid.UUID, patch: LotPatch) -> LotView:
+        lot = await self._lots.get(lot_id)
+        if lot is None:
+            raise NotFoundError("Lote no encontrado.")
+        if "location" in patch.fields_set:
+            lot.location = patch.location
+        if "status" in patch.fields_set and patch.status is not None:
+            lot.status = patch.status
+        return _lot_to_view(lot)
+
+    async def delete_lot(self, lot_id: uuid.UUID) -> LotView:
+        """Baja lógica de un lote, sólo si no ha tenido movimientos de stock."""
+        lot = await self._lots.get(lot_id)
+        if lot is None:
+            raise NotFoundError("Lote no encontrado.")
+        if lot.available_weight_g != lot.gross_weight_g:
+            raise ConflictError(
+                "No se puede eliminar un lote con movimientos de stock (consumido o vendido)."
+            )
+        lot.deleted_at = datetime.now(UTC).replace(tzinfo=None)
+        return _lot_to_view(lot)
+
+    async def undelete_lot(self, lot_id: uuid.UUID) -> LotView:
+        lot = await self._lots.get(lot_id, include_deleted=True)
+        if lot is None:
+            raise NotFoundError("Lote no encontrado.")
+        if lot.deleted_at is None:
+            raise ConflictError("El lote no está eliminado.")
+        lot.deleted_at = None
         return _lot_to_view(lot)
 
     async def kpis(self) -> InventoryKpis:

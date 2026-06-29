@@ -16,13 +16,18 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from aurum.modules.inventory.infrastructure.models import InventoryLot
 from aurum.modules.quality.domain.sample import ANALYSIS_METHODS, SAMPLE_RESULTS
-from aurum.shared.infrastructure.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from aurum.shared.infrastructure.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 _METHODS_SQL = ", ".join(f"'{m}'" for m in ANALYSIS_METHODS)
 _RESULTS_SQL = ", ".join(f"'{r}'" for r in SAMPLE_RESULTS)
 
 
-class QualitySample(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class QualitySample(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "quality_samples"
     __table_args__ = (
         UniqueConstraint(

@@ -19,13 +19,18 @@ from aurum.modules.inventory.domain.valuation import LOT_FORMS
 from aurum.modules.inventory.infrastructure.models import Material
 from aurum.modules.purchasing.domain.order import PURCHASE_ORDER_STATUSES
 from aurum.modules.terceros.infrastructure.models import Party
-from aurum.shared.infrastructure.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from aurum.shared.infrastructure.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 _STATUSES_SQL = ", ".join(f"'{s}'" for s in PURCHASE_ORDER_STATUSES)
 _FORMS_SQL = ", ".join(f"'{f}'" for f in LOT_FORMS)
 
 
-class PurchaseOrder(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class PurchaseOrder(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "purchase_orders"
     __table_args__ = (
         UniqueConstraint(

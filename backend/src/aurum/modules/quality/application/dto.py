@@ -25,6 +25,17 @@ class QualitySampleView:
     result: SampleResult
     sampled_at: date | None
     created_at: datetime | None
+    is_deleted: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class SamplePatch:
+    """Cambios de una muestra (medición, resultado, analista)."""
+
+    measured_purity: Decimal | None = None
+    result: SampleResult | None = None
+    analyst: str | None = None
+    fields_set: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)

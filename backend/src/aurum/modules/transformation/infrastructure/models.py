@@ -21,7 +21,12 @@ from aurum.modules.transformation.domain.pipeline import (
     STAGE_ORDER,
     TRANSFORMATION_STATUSES,
 )
-from aurum.shared.infrastructure.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from aurum.shared.infrastructure.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 _STAGES_SQL = ", ".join(f"'{s}'" for s in STAGE_ORDER)
 _STATUSES_SQL = ", ".join(f"'{s}'" for s in TRANSFORMATION_STATUSES)
@@ -29,7 +34,7 @@ _PROCESSES_SQL = ", ".join(f"'{p}'" for p in PROCESSES)
 _FORMS_SQL = ", ".join(f"'{f}'" for f in LOT_FORMS)
 
 
-class TransformationOrder(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class TransformationOrder(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "transformation_orders"
     __table_args__ = (
         UniqueConstraint(

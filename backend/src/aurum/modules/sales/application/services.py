@@ -8,13 +8,19 @@ lote vendido (``peso × pureza × precio``).
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from aurum.modules.accounting.application.dto import SalePosting
 from aurum.modules.accounting.application.services import AccountingService
 from aurum.modules.inventory.application.services import InventoryService
 from aurum.modules.inventory.domain.valuation import valuation_usd
-from aurum.modules.sales.application.dto import NewSalesOrder, SalesKpis, SalesOrderView
+from aurum.modules.sales.application.dto import (
+    NewSalesOrder,
+    SalesKpis,
+    SalesOrderPatch,
+    SalesOrderView,
+)
 from aurum.modules.sales.application.ports import SalesOrderRepository
 from aurum.modules.sales.domain.order import TERMINAL_STATUSES
 from aurum.modules.sales.infrastructure.models import SalesOrder
@@ -40,6 +46,7 @@ def _to_view(order: SalesOrder) -> SalesOrderView:
         status=order.status,  # type: ignore[arg-type]
         invoice_number=order.invoice_number,
         created_at=order.created_at,
+        is_deleted=order.deleted_at is not None,
     )
 
 
@@ -59,8 +66,8 @@ class SalesService:
         self._customers = customers
         self._accounting = accounting
 
-    async def list_orders(self) -> list[SalesOrderView]:
-        return [_to_view(o) for o in await self._orders.list_all()]
+    async def list_orders(self, *, include_deleted: bool = False) -> list[SalesOrderView]:
+        return [_to_view(o) for o in await self._orders.list_all(include_deleted=include_deleted)]
 
     async def get_order(self, order_id: uuid.UUID) -> SalesOrderView:
         order = await self._orders.get(order_id)
@@ -152,3 +159,40 @@ class SalesService:
             )
         order.status = new_status
         return _to_view(order)
+
+    async def update_order(self, order_id: uuid.UUID, patch: SalesOrderPatch) -> SalesOrderView:
+        order = await self._require(order_id)
+        if order.status != "pending_payment":
+            raise ConflictError(
+                f"Sólo se puede editar una OV pendiente de pago (estado: {order.status})."
+            )
+        if "price_per_oz" in patch.fields_set and patch.price_per_oz is not None:
+            order.price_per_oz = patch.price_per_oz
+        if "invoice_number" in patch.fields_set:
+            order.invoice_number = patch.invoice_number
+        return _to_view(order)
+
+    async def delete_order(self, order_id: uuid.UUID) -> SalesOrderView:
+        order = await self._require(order_id)
+        if order.status != "cancelled":
+            raise ConflictError(
+                "Sólo se puede eliminar una OV cancelada (cancelar antes restituye stock "
+                "y reversa el asiento)."
+            )
+        order.deleted_at = datetime.now(UTC).replace(tzinfo=None)
+        return _to_view(order)
+
+    async def restore_order(self, order_id: uuid.UUID) -> SalesOrderView:
+        order = await self._orders.get(order_id, include_deleted=True)
+        if order is None:
+            raise NotFoundError("Orden de venta no encontrada.")
+        if order.deleted_at is None:
+            raise ConflictError("La OV no está eliminada.")
+        order.deleted_at = None
+        return _to_view(order)
+
+    async def _require(self, order_id: uuid.UUID) -> SalesOrder:
+        order = await self._orders.get(order_id)
+        if order is None:
+            raise NotFoundError("Orden de venta no encontrada.")
+        return order

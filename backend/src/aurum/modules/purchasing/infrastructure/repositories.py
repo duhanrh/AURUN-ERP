@@ -14,16 +14,20 @@ class SqlAlchemyPurchaseOrderRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def list_all(self) -> list[PurchaseOrder]:
-        result = await self._session.execute(
-            select(PurchaseOrder).order_by(PurchaseOrder.created_at.desc())
-        )
+    async def list_all(self, *, include_deleted: bool = False) -> list[PurchaseOrder]:
+        stmt = select(PurchaseOrder)
+        if not include_deleted:
+            stmt = stmt.where(PurchaseOrder.deleted_at.is_(None))
+        result = await self._session.execute(stmt.order_by(PurchaseOrder.created_at.desc()))
         return list(result.scalars().all())
 
-    async def get(self, order_id: uuid.UUID) -> PurchaseOrder | None:
-        result = await self._session.execute(
-            select(PurchaseOrder).where(PurchaseOrder.id == order_id)
-        )
+    async def get(
+        self, order_id: uuid.UUID, *, include_deleted: bool = False
+    ) -> PurchaseOrder | None:
+        stmt = select(PurchaseOrder).where(PurchaseOrder.id == order_id)
+        if not include_deleted:
+            stmt = stmt.where(PurchaseOrder.deleted_at.is_(None))
+        result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def add(self, order: PurchaseOrder) -> PurchaseOrder:

@@ -16,12 +16,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from aurum.modules.inventory.infrastructure.models import InventoryLot
 from aurum.modules.sales.domain.order import SALES_ORDER_STATUSES
 from aurum.modules.terceros.infrastructure.models import Party
-from aurum.shared.infrastructure.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from aurum.shared.infrastructure.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 _STATUSES_SQL = ", ".join(f"'{s}'" for s in SALES_ORDER_STATUSES)
 
 
-class SalesOrder(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class SalesOrder(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "sales_orders"
     __table_args__ = (
         UniqueConstraint("tenant_id", "order_code", name="uq_sales_orders_tenant_id_order_code"),

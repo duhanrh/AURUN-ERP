@@ -11,6 +11,9 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aurum.modules.audit.domain.actions import (
+    LOT_DELETE,
+    LOT_RESTORE,
+    LOT_UPDATE,
     MATERIAL_CREATE,
     MATERIAL_DELETE,
     MATERIAL_RESTORE,
@@ -29,6 +32,7 @@ from aurum.modules.inventory.presentation.schemas import (
     InventoryKpisResponse,
     LotResponse,
     MaterialResponse,
+    UpdateLotRequest,
     UpdateMaterialRequest,
 )
 from aurum.shared.dependencies import get_session, require_tenant_id
@@ -146,8 +150,9 @@ async def restore_material(
 async def list_lots(
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID = Depends(require_tenant_id),
+    include_deleted: bool = Query(default=False),
 ) -> list[LotResponse]:
-    views = await _service(session, tenant_id).list_lots()
+    views = await _service(session, tenant_id).list_lots(include_deleted=include_deleted)
     return [LotResponse.from_view(v) for v in views]
 
 
@@ -180,4 +185,55 @@ async def create_lot(
     tenant_id: uuid.UUID = Depends(require_tenant_id),
 ) -> LotResponse:
     view = await _service(session, tenant_id).create_lot(payload.to_new_lot())
+    return LotResponse.from_view(view)
+
+
+@router.patch("/lots/{lot_id}", response_model=LotResponse, dependencies=[_write])
+async def update_lot(
+    lot_id: uuid.UUID,
+    payload: UpdateLotRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = Depends(_write_dep),
+) -> LotResponse:
+    view = await _service(session, tenant_id).update_lot(lot_id, payload.to_patch())
+    await record_event(
+        session, tenant_id, action=LOT_UPDATE, entity_type="inventory_lot",
+        entity_id=lot_id, principal=principal, request=request,
+        changes=payload.model_dump(exclude_unset=True, mode="json"),
+    )
+    return LotResponse.from_view(view)
+
+
+@router.delete("/lots/{lot_id}", response_model=LotResponse, dependencies=[_write])
+async def delete_lot(
+    lot_id: uuid.UUID,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = Depends(_write_dep),
+) -> LotResponse:
+    view = await _service(session, tenant_id).delete_lot(lot_id)
+    await record_event(
+        session, tenant_id, action=LOT_DELETE, entity_type="inventory_lot",
+        entity_id=lot_id, principal=principal, request=request,
+        changes={"lot_code": view.lot_code},
+    )
+    return LotResponse.from_view(view)
+
+
+@router.post("/lots/{lot_id}/restore", response_model=LotResponse, dependencies=[_write])
+async def restore_lot(
+    lot_id: uuid.UUID,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = Depends(_write_dep),
+) -> LotResponse:
+    view = await _service(session, tenant_id).undelete_lot(lot_id)
+    await record_event(
+        session, tenant_id, action=LOT_RESTORE, entity_type="inventory_lot",
+        entity_id=lot_id, principal=principal, request=request,
+    )
     return LotResponse.from_view(view)

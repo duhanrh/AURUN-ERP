@@ -10,6 +10,7 @@ Reglas (criterios de aceptación de la Fase 5):
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 
 from aurum.modules.inventory.application.dto import NewLot
 from aurum.modules.inventory.application.ports import MaterialRepository
@@ -17,6 +18,7 @@ from aurum.modules.inventory.application.services import InventoryService
 from aurum.modules.transformation.application.dto import (
     NewTransformationOrder,
     TransformationKpis,
+    TransformationOrderPatch,
     TransformationOrderView,
 )
 from aurum.modules.transformation.application.ports import TransformationOrderRepository
@@ -62,6 +64,7 @@ def _to_view(order: TransformationOrder) -> TransformationOrderView:
         expected_end=order.expected_end,
         output_lot_id=order.output_lot_id,
         created_at=order.created_at,
+        is_deleted=order.deleted_at is not None,
     )
 
 
@@ -79,8 +82,11 @@ class TransformationService:
         self._inventory = inventory
         self._materials = materials
 
-    async def list_orders(self) -> list[TransformationOrderView]:
-        return [_to_view(o) for o in await self._orders.list_all()]
+    async def list_orders(
+        self, *, include_deleted: bool = False
+    ) -> list[TransformationOrderView]:
+        orders = await self._orders.list_all(include_deleted=include_deleted)
+        return [_to_view(o) for o in orders]
 
     async def get_order(self, order_id: uuid.UUID) -> TransformationOrderView:
         order = await self._require(order_id)
@@ -173,6 +179,33 @@ class TransformationService:
         if order.status != "in_progress":
             raise ConflictError(f"La OT no está en curso (estado: {order.status}).")
         order.status = "cancelled"
+        return _to_view(order)
+
+    async def update_order(
+        self, order_id: uuid.UUID, patch: TransformationOrderPatch
+    ) -> TransformationOrderView:
+        order = await self._require(order_id)
+        if order.status != "in_progress":
+            raise ConflictError(f"Sólo se puede editar una OT en curso (estado: {order.status}).")
+        for attr in ("responsible", "started_at", "expected_end"):
+            if attr in patch.fields_set:
+                setattr(order, attr, getattr(patch, attr))
+        return _to_view(order)
+
+    async def delete_order(self, order_id: uuid.UUID) -> TransformationOrderView:
+        order = await self._require(order_id)
+        if order.status == "in_progress":
+            raise ConflictError("Cancela la OT en curso antes de eliminarla.")
+        order.deleted_at = datetime.now(UTC).replace(tzinfo=None)
+        return _to_view(order)
+
+    async def restore_order(self, order_id: uuid.UUID) -> TransformationOrderView:
+        order = await self._orders.get(order_id, include_deleted=True)
+        if order is None:
+            raise NotFoundError("Orden de transformación no encontrada.")
+        if order.deleted_at is None:
+            raise ConflictError("La OT no está eliminada.")
+        order.deleted_at = None
         return _to_view(order)
 
     async def _require(self, order_id: uuid.UUID) -> TransformationOrder:

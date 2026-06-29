@@ -8,7 +8,12 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
-from aurum.modules.sales.application.dto import NewSalesOrder, SalesKpis, SalesOrderView
+from aurum.modules.sales.application.dto import (
+    NewSalesOrder,
+    SalesKpis,
+    SalesOrderPatch,
+    SalesOrderView,
+)
 from aurum.modules.sales.domain.order import SalesOrderStatus
 
 
@@ -27,6 +32,7 @@ class SalesOrderResponse(BaseModel):
     status: str
     invoice_number: str | None
     created_at: datetime | None
+    is_deleted: bool = False
 
     @classmethod
     def from_view(cls, v: SalesOrderView) -> SalesOrderResponse:
@@ -45,6 +51,7 @@ class SalesOrderResponse(BaseModel):
             status=v.status,
             invoice_number=v.invoice_number,
             created_at=v.created_at,
+            is_deleted=v.is_deleted,
         )
 
 
@@ -83,3 +90,15 @@ class CreateSalesOrderRequest(BaseModel):
 
 class UpdateSalesStatusRequest(BaseModel):
     status: SalesOrderStatus
+
+
+class UpdateSalesOrderRequest(BaseModel):
+    price_per_oz: Decimal | None = Field(default=None, gt=0)
+    invoice_number: str | None = Field(default=None, max_length=40)
+
+    def to_patch(self) -> SalesOrderPatch:
+        return SalesOrderPatch(
+            price_per_oz=self.price_per_oz,
+            invoice_number=self.invoice_number,
+            fields_set=frozenset(self.model_fields_set),
+        )

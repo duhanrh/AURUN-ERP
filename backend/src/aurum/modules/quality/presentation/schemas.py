@@ -8,7 +8,12 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
-from aurum.modules.quality.application.dto import NewSample, QualityKpis, QualitySampleView
+from aurum.modules.quality.application.dto import (
+    NewSample,
+    QualityKpis,
+    QualitySampleView,
+    SamplePatch,
+)
 from aurum.modules.quality.domain.sample import AnalysisMethod, SampleResult
 
 
@@ -26,6 +31,7 @@ class QualitySampleResponse(BaseModel):
     result: str
     sampled_at: date | None
     created_at: datetime | None
+    is_deleted: bool = False
 
     @classmethod
     def from_view(cls, v: QualitySampleView) -> QualitySampleResponse:
@@ -43,6 +49,7 @@ class QualitySampleResponse(BaseModel):
             result=v.result,
             sampled_at=v.sampled_at,
             created_at=v.created_at,
+            is_deleted=v.is_deleted,
         )
 
 
@@ -78,4 +85,18 @@ class CreateSampleRequest(BaseModel):
             result=self.result,
             analyst=self.analyst,
             sampled_at=self.sampled_at,
+        )
+
+
+class UpdateSampleRequest(BaseModel):
+    measured_purity: Decimal | None = Field(default=None, gt=0, le=1)
+    result: SampleResult | None = None
+    analyst: str | None = Field(default=None, max_length=160)
+
+    def to_patch(self) -> SamplePatch:
+        return SamplePatch(
+            measured_purity=self.measured_purity,
+            result=self.result,
+            analyst=self.analyst,
+            fields_set=frozenset(self.model_fields_set),
         )

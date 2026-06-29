@@ -26,6 +26,16 @@ class SalesOrderView:
     status: SalesOrderStatus
     invoice_number: str | None
     created_at: datetime | None
+    is_deleted: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class SalesOrderPatch:
+    """Cambios de una OV; sólo editable mientras esté ``pending_payment``."""
+
+    price_per_oz: Decimal | None = None
+    invoice_number: str | None = None
+    fields_set: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)

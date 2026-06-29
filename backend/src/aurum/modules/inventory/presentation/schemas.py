@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from aurum.modules.inventory.application.dto import (
     InventoryKpis,
+    LotPatch,
     LotView,
     MaterialPatch,
     MaterialView,
@@ -84,6 +85,7 @@ class LotResponse(BaseModel):
     supplier_id: uuid.UUID | None
     entry_date: date | None
     created_at: datetime | None
+    is_deleted: bool = False
 
     @classmethod
     def from_view(cls, v: LotView) -> LotResponse:
@@ -105,6 +107,7 @@ class LotResponse(BaseModel):
             supplier_id=v.supplier_id,
             entry_date=v.entry_date,
             created_at=v.created_at,
+            is_deleted=v.is_deleted,
         )
 
 
@@ -148,4 +151,16 @@ class CreateLotRequest(BaseModel):
             supplier_id=self.supplier_id,
             status=self.status,
             entry_date=self.entry_date,
+        )
+
+
+class UpdateLotRequest(BaseModel):
+    location: str | None = Field(default=None, max_length=120)
+    status: LotStatus | None = None
+
+    def to_patch(self) -> LotPatch:
+        return LotPatch(
+            location=self.location,
+            status=self.status,
+            fields_set=frozenset(self.model_fields_set),
         )

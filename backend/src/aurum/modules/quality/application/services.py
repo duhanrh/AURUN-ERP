@@ -9,13 +9,19 @@ cuarentena previa, devolviéndolo a disponible.
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 
 from aurum.modules.inventory.application.services import InventoryService
-from aurum.modules.quality.application.dto import NewSample, QualityKpis, QualitySampleView
+from aurum.modules.quality.application.dto import (
+    NewSample,
+    QualityKpis,
+    QualitySampleView,
+    SamplePatch,
+)
 from aurum.modules.quality.application.ports import QualitySampleRepository
 from aurum.modules.quality.infrastructure.models import QualitySample
 from aurum.shared.codes import generate_code
-from aurum.shared.errors import NotFoundError
+from aurum.shared.errors import ConflictError, NotFoundError
 
 
 def _to_view(sample: QualitySample) -> QualitySampleView:
@@ -33,6 +39,7 @@ def _to_view(sample: QualitySample) -> QualitySampleView:
         result=sample.result,  # type: ignore[arg-type]
         sampled_at=sample.sampled_at,
         created_at=sample.created_at,
+        is_deleted=sample.deleted_at is not None,
     )
 
 
@@ -48,8 +55,8 @@ class QualityService:
         self._samples = samples
         self._inventory = inventory
 
-    async def list_samples(self) -> list[QualitySampleView]:
-        return [_to_view(s) for s in await self._samples.list_all()]
+    async def list_samples(self, *, include_deleted: bool = False) -> list[QualitySampleView]:
+        return [_to_view(s) for s in await self._samples.list_all(include_deleted=include_deleted)]
 
     async def get_sample(self, sample_id: uuid.UUID) -> QualitySampleView:
         sample = await self._samples.get(sample_id)
@@ -91,3 +98,39 @@ class QualityService:
         created = await self._samples.get(sample.id)
         assert created is not None
         return _to_view(created)
+
+    async def update_sample(self, sample_id: uuid.UUID, patch: SamplePatch) -> QualitySampleView:
+        sample = await self._require(sample_id)
+        if "measured_purity" in patch.fields_set and patch.measured_purity is not None:
+            sample.measured_purity = patch.measured_purity
+        if "analyst" in patch.fields_set:
+            sample.analyst = patch.analyst
+        if "result" in patch.fields_set and patch.result is not None:
+            sample.result = patch.result
+            # Re-evaluar el efecto sobre el lote según el nuevo veredicto.
+            lot = await self._inventory.get_lot(sample.lot_id)
+            if patch.result == "rejected":
+                await self._inventory.set_lot_status(sample.lot_id, "quarantine")
+            elif patch.result == "approved" and lot.status == "quarantine":
+                await self._inventory.set_lot_status(sample.lot_id, "available")
+        return _to_view(sample)
+
+    async def delete_sample(self, sample_id: uuid.UUID) -> QualitySampleView:
+        sample = await self._require(sample_id)
+        sample.deleted_at = datetime.now(UTC).replace(tzinfo=None)
+        return _to_view(sample)
+
+    async def restore_sample(self, sample_id: uuid.UUID) -> QualitySampleView:
+        sample = await self._samples.get(sample_id, include_deleted=True)
+        if sample is None:
+            raise NotFoundError("Muestra no encontrada.")
+        if sample.deleted_at is None:
+            raise ConflictError("La muestra no está eliminada.")
+        sample.deleted_at = None
+        return _to_view(sample)
+
+    async def _require(self, sample_id: uuid.UUID) -> QualitySample:
+        sample = await self._samples.get(sample_id)
+        if sample is None:
+            raise NotFoundError("Muestra no encontrada.")
+        return sample

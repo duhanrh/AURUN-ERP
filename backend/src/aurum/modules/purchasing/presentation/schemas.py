@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from aurum.modules.inventory.domain.valuation import LotForm
 from aurum.modules.purchasing.application.dto import (
     NewPurchaseOrder,
+    PurchaseOrderPatch,
     PurchaseOrderView,
     PurchasingKpis,
 )
@@ -33,6 +34,7 @@ class PurchaseOrderResponse(BaseModel):
     status: str
     lot_id: uuid.UUID | None
     created_at: datetime | None
+    is_deleted: bool = False
 
     @classmethod
     def from_view(cls, v: PurchaseOrderView) -> PurchaseOrderResponse:
@@ -53,6 +55,7 @@ class PurchaseOrderResponse(BaseModel):
             status=v.status,
             lot_id=v.lot_id,
             created_at=v.created_at,
+            is_deleted=v.is_deleted,
         )
 
 
@@ -94,4 +97,26 @@ class CreatePurchaseOrderRequest(BaseModel):
             location=self.location,
             expected_delivery=self.expected_delivery,
             notes=self.notes,
+        )
+
+
+class UpdatePurchaseOrderRequest(BaseModel):
+    quantity_g: Decimal | None = Field(default=None, gt=0)
+    declared_purity: Decimal | None = Field(default=None, gt=0, le=1)
+    price_per_oz: Decimal | None = Field(default=None, gt=0)
+    form: LotForm | None = None
+    location: str | None = Field(default=None, max_length=120)
+    expected_delivery: date | None = None
+    notes: str | None = None
+
+    def to_patch(self) -> PurchaseOrderPatch:
+        return PurchaseOrderPatch(
+            quantity_g=self.quantity_g,
+            declared_purity=self.declared_purity,
+            price_per_oz=self.price_per_oz,
+            form=self.form,
+            location=self.location,
+            expected_delivery=self.expected_delivery,
+            notes=self.notes,
+            fields_set=frozenset(self.model_fields_set),
         )
