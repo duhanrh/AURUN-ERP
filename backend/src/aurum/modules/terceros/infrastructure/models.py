@@ -13,23 +13,36 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, Index, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Index, Numeric, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aurum.modules.terceros.domain.party import PARTY_KINDS, PARTY_STATUSES
-from aurum.shared.infrastructure.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from aurum.shared.infrastructure.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 _KINDS_SQL = ", ".join(f"'{k}'" for k in PARTY_KINDS)
 _STATUSES_SQL = ", ".join(f"'{s}'" for s in PARTY_STATUSES)
 
 
-class Party(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Party(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     """Tercero del tenant (cliente o proveedor)."""
 
     __tablename__ = "parties"
     __table_args__ = (
-        UniqueConstraint("tenant_id", "kind", "tax_id", name="uq_parties_tenant_id_kind_tax_id"),
+        # Unicidad de NIT solo entre terceros vigentes (un borrado libera el NIT).
+        Index(
+            "uq_parties_tenant_id_kind_tax_id",
+            "tenant_id",
+            "kind",
+            "tax_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
         CheckConstraint(f"kind IN ({_KINDS_SQL})", name="kind_valid"),
         CheckConstraint(f"status IN ({_STATUSES_SQL})", name="status_valid"),
         Index("idx_parties_tenant_id_kind", "tenant_id", "kind"),

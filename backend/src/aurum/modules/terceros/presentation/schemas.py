@@ -35,11 +35,13 @@ class PartyResponse(BaseModel):
     preferred_material: str | None
     credit_limit: float | None
     created_at: datetime | None
+    is_deleted: bool = False
 
     @classmethod
     def from_view(cls, view: PartyView) -> PartyResponse:
         return cls(
             id=view.id,
+            is_deleted=view.is_deleted,
             kind=view.kind,
             legal_name=view.legal_name,
             tax_id=view.tax_id,

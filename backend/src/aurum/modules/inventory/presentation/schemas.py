@@ -11,8 +11,10 @@ from pydantic import BaseModel, Field
 from aurum.modules.inventory.application.dto import (
     InventoryKpis,
     LotView,
+    MaterialPatch,
     MaterialView,
     NewLot,
+    NewMaterial,
 )
 from aurum.modules.inventory.domain.valuation import LotForm, LotStatus
 
@@ -23,10 +25,45 @@ class MaterialResponse(BaseModel):
     name: str
     symbol: str
     is_active: bool
+    is_deleted: bool = False
 
     @classmethod
     def from_view(cls, v: MaterialView) -> MaterialResponse:
-        return cls(id=v.id, code=v.code, name=v.name, symbol=v.symbol, is_active=v.is_active)
+        return cls(
+            id=v.id,
+            code=v.code,
+            name=v.name,
+            symbol=v.symbol,
+            is_active=v.is_active,
+            is_deleted=v.is_deleted,
+        )
+
+
+class CreateMaterialRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=16)
+    name: str = Field(min_length=1, max_length=80)
+    symbol: str = Field(min_length=1, max_length=8)
+    is_active: bool = True
+
+    def to_dto(self) -> NewMaterial:
+        return NewMaterial(
+            code=self.code, name=self.name, symbol=self.symbol, is_active=self.is_active
+        )
+
+
+class UpdateMaterialRequest(BaseModel):
+    name: str | None = Field(default=None, max_length=80)
+    symbol: str | None = Field(default=None, max_length=8)
+    is_active: bool | None = None
+
+    def to_patch(self) -> MaterialPatch:
+        fields = self.model_fields_set
+        return MaterialPatch(
+            name=self.name,
+            symbol=self.symbol,
+            is_active=self.is_active,
+            fields_set=frozenset(fields),
+        )
 
 
 class LotResponse(BaseModel):

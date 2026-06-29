@@ -17,6 +17,23 @@ class MaterialView:
     name: str
     symbol: str
     is_active: bool
+    is_deleted: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class NewMaterial:
+    code: str
+    name: str
+    symbol: str
+    is_active: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class MaterialPatch:
+    name: str | None = None
+    symbol: str | None = None
+    is_active: bool | None = None
+    fields_set: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)

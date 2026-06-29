@@ -9,6 +9,7 @@ servicio sin duplicar lógica. La verificación de permisos vive en presentació
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from aurum.modules.terceros.application.dto import (
@@ -58,6 +59,7 @@ def _to_view(party: Party) -> PartyView:
         preferred_material=party.preferred_material,
         credit_limit=float(party.credit_limit) if party.credit_limit is not None else None,
         created_at=party.created_at,
+        is_deleted=party.deleted_at is not None,
     )
 
 
@@ -75,8 +77,9 @@ class PartyService:
         self._kind = kind
         self._parties = parties
 
-    async def list(self) -> list[PartyView]:
-        return [_to_view(p) for p in await self._parties.list_by_kind(self._kind)]
+    async def list(self, *, include_deleted: bool = False) -> list[PartyView]:
+        parties = await self._parties.list_by_kind(self._kind, include_deleted=include_deleted)
+        return [_to_view(p) for p in parties]
 
     async def kpis(self) -> PartyKpis:
         counts = await self._parties.count_by_status(self._kind)
@@ -156,6 +159,29 @@ class PartyService:
                 setattr(party, attr, getattr(patch, attr))
 
         self._apply_kind_fields_patch(party, patch)
+        return _to_view(party)
+
+    async def delete(self, party_id: uuid.UUID) -> PartyView:
+        """Baja lógica: marca ``deleted_at`` (no borra físicamente)."""
+        party = await self._parties.get(self._kind, party_id)
+        if party is None:
+            raise NotFoundError("Tercero no encontrado.")
+        party.deleted_at = datetime.now(UTC).replace(tzinfo=None)
+        return _to_view(party)
+
+    async def restore(self, party_id: uuid.UUID) -> PartyView:
+        """Restaura un tercero eliminado (limpia ``deleted_at``)."""
+        party = await self._parties.get(self._kind, party_id, include_deleted=True)
+        if party is None:
+            raise NotFoundError("Tercero no encontrado.")
+        if party.deleted_at is None:
+            raise ConflictError("El tercero no está eliminado.")
+        # Al restaurar, el NIT no debe chocar con otro vigente.
+        if await self._parties.exists_tax_id(self._kind, party.tax_id, exclude_id=party.id):
+            raise ConflictError(
+                "No se puede restaurar: ya existe un tercero vigente con ese NIT/documento."
+            )
+        party.deleted_at = None
         return _to_view(party)
 
     # ── helpers ──

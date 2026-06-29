@@ -20,25 +20,36 @@ class SqlAlchemyPartyRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def list_by_kind(self, kind: PartyKind) -> list[Party]:
-        result = await self._session.execute(
-            select(Party).where(Party.kind == kind).order_by(Party.legal_name)
-        )
+    async def list_by_kind(
+        self, kind: PartyKind, *, include_deleted: bool = False
+    ) -> list[Party]:
+        stmt = select(Party).where(Party.kind == kind)
+        if not include_deleted:
+            stmt = stmt.where(Party.deleted_at.is_(None))
+        result = await self._session.execute(stmt.order_by(Party.legal_name))
         return list(result.scalars().all())
 
-    async def get(self, kind: PartyKind, party_id: uuid.UUID) -> Party | None:
-        result = await self._session.execute(
-            select(Party).where(Party.id == party_id, Party.kind == kind)
-        )
+    async def get(
+        self, kind: PartyKind, party_id: uuid.UUID, *, include_deleted: bool = False
+    ) -> Party | None:
+        stmt = select(Party).where(Party.id == party_id, Party.kind == kind)
+        if not include_deleted:
+            stmt = stmt.where(Party.deleted_at.is_(None))
+        result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def exists_tax_id(
         self, kind: PartyKind, tax_id: str, *, exclude_id: uuid.UUID | None = None
     ) -> bool:
+        # La unicidad de NIT solo aplica a terceros vigentes (un borrado libera el NIT).
         stmt = (
             select(func.count())
             .select_from(Party)
-            .where(Party.kind == kind, func.lower(Party.tax_id) == tax_id.lower())
+            .where(
+                Party.kind == kind,
+                func.lower(Party.tax_id) == tax_id.lower(),
+                Party.deleted_at.is_(None),
+            )
         )
         if exclude_id is not None:
             stmt = stmt.where(Party.id != exclude_id)
@@ -53,7 +64,7 @@ class SqlAlchemyPartyRepository:
     async def count_by_status(self, kind: PartyKind) -> dict[str, int]:
         result = await self._session.execute(
             select(Party.status, func.count())
-            .where(Party.kind == kind)
+            .where(Party.kind == kind, Party.deleted_at.is_(None))
             .group_by(Party.status)
         )
         return {row[0]: row[1] for row in result.all()}

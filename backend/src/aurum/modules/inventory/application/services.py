@@ -8,13 +8,16 @@ la invariante de no vender por encima de lo disponible (sección 7.3).
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from aurum.modules.inventory.application.dto import (
     InventoryKpis,
     LotView,
+    MaterialPatch,
     MaterialView,
     NewLot,
+    NewMaterial,
 )
 from aurum.modules.inventory.application.ports import LotRepository, MaterialRepository
 from aurum.modules.inventory.domain.valuation import (
@@ -33,7 +36,14 @@ class InsufficientStockError(DomainError):
 
 
 def _material_to_view(m: Material) -> MaterialView:
-    return MaterialView(id=m.id, code=m.code, name=m.name, symbol=m.symbol, is_active=m.is_active)
+    return MaterialView(
+        id=m.id,
+        code=m.code,
+        name=m.name,
+        symbol=m.symbol,
+        is_active=m.is_active,
+        is_deleted=m.deleted_at is not None,
+    )
 
 
 def _lot_to_view(lot: InventoryLot) -> LotView:
@@ -72,6 +82,58 @@ class InventoryService:
 
     async def list_materials(self) -> list[MaterialView]:
         return [_material_to_view(m) for m in await self._materials.list_active()]
+
+    async def list_catalog(self, *, include_deleted: bool = False) -> list[MaterialView]:
+        materials = await self._materials.list_catalog(include_deleted=include_deleted)
+        return [_material_to_view(m) for m in materials]
+
+    async def create_material(self, data: NewMaterial) -> MaterialView:
+        code = data.code.strip().upper()
+        if not code:
+            raise ConflictError("El código del material es obligatorio.")
+        if await self._materials.exists_code(code):
+            raise ConflictError(f"Ya existe un material con el código '{code}'.")
+        material = Material(
+            tenant_id=self._tenant_id,
+            code=code,
+            name=data.name.strip(),
+            symbol=data.symbol.strip(),
+            is_active=data.is_active,
+        )
+        await self._materials.add(material)
+        return _material_to_view(material)
+
+    async def update_material(self, material_id: uuid.UUID, patch: MaterialPatch) -> MaterialView:
+        material = await self._materials.get(material_id)
+        if material is None:
+            raise NotFoundError("Material no encontrado.")
+        if "name" in patch.fields_set and patch.name is not None:
+            material.name = patch.name.strip()
+        if "symbol" in patch.fields_set and patch.symbol is not None:
+            material.symbol = patch.symbol.strip()
+        if "is_active" in patch.fields_set and patch.is_active is not None:
+            material.is_active = patch.is_active
+        return _material_to_view(material)
+
+    async def delete_material(self, material_id: uuid.UUID) -> MaterialView:
+        material = await self._materials.get(material_id)
+        if material is None:
+            raise NotFoundError("Material no encontrado.")
+        material.deleted_at = datetime.now(UTC).replace(tzinfo=None)
+        return _material_to_view(material)
+
+    async def restore_material(self, material_id: uuid.UUID) -> MaterialView:
+        material = await self._materials.get(material_id, include_deleted=True)
+        if material is None:
+            raise NotFoundError("Material no encontrado.")
+        if material.deleted_at is None:
+            raise ConflictError("El material no está eliminado.")
+        if await self._materials.exists_code(material.code, exclude_id=material.id):
+            raise ConflictError(
+                "No se puede restaurar: ya existe un material vigente con ese código."
+            )
+        material.deleted_at = None
+        return _material_to_view(material)
 
     async def list_lots(self) -> list[LotView]:
         return [_lot_to_view(lot) for lot in await self._lots.list_all()]

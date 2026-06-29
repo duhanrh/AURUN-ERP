@@ -33,6 +33,7 @@ class PartyView:
     preferred_material: str | None = None
     credit_limit: float | None = None
     created_at: datetime | None = None
+    is_deleted: bool = False
 
 
 @dataclass(frozen=True, slots=True)

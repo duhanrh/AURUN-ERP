@@ -8,10 +8,15 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from aurum.modules.audit.domain.actions import USER_CREATE
+from aurum.modules.audit.domain.actions import (
+    USER_CREATE,
+    USER_DELETE,
+    USER_RESTORE,
+    USER_UPDATE,
+)
 from aurum.modules.audit.presentation.recorder import record_event
 from aurum.modules.auth.infrastructure.security import hash_password
 from aurum.modules.auth.presentation.dependencies import Principal, require_permission
@@ -26,6 +31,7 @@ from aurum.modules.users.infrastructure.repositories import (
 from aurum.modules.users.presentation.schemas import (
     CreateUserRequest,
     RoleResponse,
+    UpdateUserRequest,
     UserResponse,
 )
 from aurum.shared.dependencies import get_session, require_tenant_id
@@ -49,8 +55,9 @@ def _build_service(session: AsyncSession, tenant_id: uuid.UUID) -> UserService:
 async def list_users(
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID = Depends(require_tenant_id),
+    include_deleted: bool = Query(default=False),
 ) -> list[UserResponse]:
-    views = await _build_service(session, tenant_id).list_users()
+    views = await _build_service(session, tenant_id).list_users(include_deleted=include_deleted)
     return [UserResponse.from_view(v) for v in views]
 
 
@@ -97,6 +104,59 @@ async def get_user(
     tenant_id: uuid.UUID = Depends(require_tenant_id),
 ) -> UserResponse:
     view = await _build_service(session, tenant_id).get_user(user_id)
+    return UserResponse.from_view(view)
+
+
+@router.patch("/{user_id}", response_model=UserResponse, dependencies=[Depends(_guard)])
+async def update_user(
+    user_id: uuid.UUID,
+    payload: UpdateUserRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = Depends(_guard),
+) -> UserResponse:
+    view = await _build_service(session, tenant_id).update_user(user_id, payload.to_patch())
+    await record_event(
+        session, tenant_id, action=USER_UPDATE, entity_type="user",
+        entity_id=user_id, principal=principal, request=request,
+        changes=payload.model_dump(exclude_unset=True, exclude={"password"}),
+    )
+    return UserResponse.from_view(view)
+
+
+@router.delete("/{user_id}", response_model=UserResponse, dependencies=[Depends(_guard)])
+async def delete_user(
+    user_id: uuid.UUID,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = Depends(_guard),
+) -> UserResponse:
+    view = await _build_service(session, tenant_id).delete_user(
+        user_id, current_user_id=principal.user_id
+    )
+    await record_event(
+        session, tenant_id, action=USER_DELETE, entity_type="user",
+        entity_id=user_id, principal=principal, request=request,
+        changes={"email": view.email},
+    )
+    return UserResponse.from_view(view)
+
+
+@router.post("/{user_id}/restore", response_model=UserResponse, dependencies=[Depends(_guard)])
+async def restore_user(
+    user_id: uuid.UUID,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = Depends(_guard),
+) -> UserResponse:
+    view = await _build_service(session, tenant_id).restore_user(user_id)
+    await record_event(
+        session, tenant_id, action=USER_RESTORE, entity_type="user",
+        entity_id=user_id, principal=principal, request=request,
+    )
     return UserResponse.from_view(view)
 
 

@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from aurum.modules.auth.presentation.dependencies import require_permission
+from aurum.modules.audit.domain.actions import PARTY_DELETE, PARTY_RESTORE
+from aurum.modules.audit.presentation.recorder import record_event
+from aurum.modules.auth.presentation.dependencies import Principal, require_permission
 from aurum.modules.terceros.application.services import PartyService
 from aurum.modules.terceros.domain.party import PartyKind
 from aurum.modules.terceros.infrastructure.repositories import SqlAlchemyPartyRepository
@@ -45,13 +47,15 @@ def build_parties_router(
     router = APIRouter(prefix=prefix, tags=[tag])
     read_guard = Depends(require_permission(f"{permission_resource}:access"))
     write_guard = Depends(require_permission(f"{permission_resource}:manage"))
+    write_dep = require_permission(f"{permission_resource}:manage")
 
     @router.get("", response_model=list[PartyResponse], dependencies=[read_guard])
     async def list_parties(
         session: AsyncSession = Depends(get_session),
         tenant_id: uuid.UUID = Depends(require_tenant_id),
+        include_deleted: bool = Query(default=False),
     ) -> list[PartyResponse]:
-        views = await _service(session, tenant_id, kind).list()
+        views = await _service(session, tenant_id, kind).list(include_deleted=include_deleted)
         return [PartyResponse.from_view(v) for v in views]
 
     @router.get("/kpis", response_model=PartyKpisResponse, dependencies=[read_guard])
@@ -92,6 +96,39 @@ def build_parties_router(
         tenant_id: uuid.UUID = Depends(require_tenant_id),
     ) -> PartyResponse:
         view = await _service(session, tenant_id, kind).update(party_id, payload.to_patch())
+        return PartyResponse.from_view(view)
+
+    @router.delete("/{party_id}", response_model=PartyResponse, dependencies=[write_guard])
+    async def delete_party(
+        party_id: uuid.UUID,
+        request: Request,
+        session: AsyncSession = Depends(get_session),
+        tenant_id: uuid.UUID = Depends(require_tenant_id),
+        principal: Principal = Depends(write_dep),
+    ) -> PartyResponse:
+        view = await _service(session, tenant_id, kind).delete(party_id)
+        await record_event(
+            session, tenant_id, action=PARTY_DELETE, entity_type=kind,
+            entity_id=party_id, principal=principal, request=request,
+            changes={"legal_name": view.legal_name},
+        )
+        return PartyResponse.from_view(view)
+
+    @router.post(
+        "/{party_id}/restore", response_model=PartyResponse, dependencies=[write_guard]
+    )
+    async def restore_party(
+        party_id: uuid.UUID,
+        request: Request,
+        session: AsyncSession = Depends(get_session),
+        tenant_id: uuid.UUID = Depends(require_tenant_id),
+        principal: Principal = Depends(write_dep),
+    ) -> PartyResponse:
+        view = await _service(session, tenant_id, kind).restore(party_id)
+        await record_event(
+            session, tenant_id, action=PARTY_RESTORE, entity_type=kind,
+            entity_id=party_id, principal=principal, request=request,
+        )
         return PartyResponse.from_view(view)
 
     return router

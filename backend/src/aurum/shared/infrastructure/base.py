@@ -54,3 +54,19 @@ class TimestampMixin:
         onupdate=func.now(),
         nullable=False,
     )
+
+
+class SoftDeleteMixin:
+    """Borrado lógico: ``deleted_at`` nulo = vigente; con valor = eliminado.
+
+    Es **ortogonal** al estado de negocio (``status``/``is_active``): un registro
+    puede estar inactivo de negocio sin estar eliminado, y viceversa. Los
+    repositorios filtran ``deleted_at IS NULL`` por defecto; el borrado fija el
+    timestamp y la restauración lo limpia. Nunca se borra físicamente.
+    """
+
+    deleted_at: Mapped[datetime | None] = mapped_column(nullable=True, default=None)
+
+    @property
+    def is_deleted(self) -> bool:
+        return self.deleted_at is not None

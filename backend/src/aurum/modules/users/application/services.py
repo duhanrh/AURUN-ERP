@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime
 
-from aurum.modules.users.application.dto import NewUser, RoleView, UserView
+from aurum.modules.users.application.dto import NewUser, RoleView, UserPatch, UserView
 from aurum.modules.users.application.ports import (
     PermissionRepository,
     RoleRepository,
@@ -23,7 +24,14 @@ from aurum.modules.users.infrastructure.models import (
     User,
     UserPermissionException,
 )
-from aurum.shared.errors import ConflictError, NotFoundError
+from aurum.shared.errors import ConflictError, DomainError, NotFoundError
+
+_SUPERUSER_SLUG = "superusuario"
+
+
+class LastSuperuserError(DomainError):
+    status_code = 409
+    error_code = "last_superuser"
 
 
 def _role_to_view(role: Role) -> RoleView:
@@ -54,6 +62,7 @@ def _user_to_view(user: User) -> UserView:
         effective_permissions=_effective_permissions(user),
         last_login_at=user.last_login_at,
         created_at=user.created_at,
+        is_deleted=user.deleted_at is not None,
     )
 
 
@@ -78,8 +87,9 @@ class UserService:
     async def list_roles(self) -> list[RoleView]:
         return [_role_to_view(r) for r in await self._roles.list_all()]
 
-    async def list_users(self) -> list[UserView]:
-        return [_user_to_view(u) for u in await self._users.list_all()]
+    async def list_users(self, *, include_deleted: bool = False) -> list[UserView]:
+        users = await self._users.list_all(include_deleted=include_deleted)
+        return [_user_to_view(u) for u in users]
 
     async def get_user(self, user_id: uuid.UUID) -> UserView:
         user = await self._users.get_by_id(user_id)
@@ -111,6 +121,68 @@ class UserService:
         created = await self._users.get_by_id(user.id)
         assert created is not None
         return _user_to_view(created)
+
+    async def update_user(self, user_id: uuid.UUID, patch: UserPatch) -> UserView:
+        user = await self._users.get_by_id(user_id)
+        if user is None:
+            raise NotFoundError("Usuario no encontrado.")
+        fields = patch.fields_set
+        was_superuser = user.role is not None and user.role.slug == _SUPERUSER_SLUG
+
+        if "full_name" in fields and patch.full_name is not None:
+            user.full_name = patch.full_name.strip()
+        if "password" in fields and patch.password:
+            user.hashed_password = self._hash(patch.password)
+        if "is_active" in fields and patch.is_active is not None:
+            if not patch.is_active and was_superuser:
+                await self._guard_last_superuser(exclude_id=user.id)
+            user.is_active = patch.is_active
+        if "role_slug" in fields and patch.role_slug is not None:
+            role = await self._roles.get_by_slug(patch.role_slug)
+            if role is None:
+                raise NotFoundError(f"Rol '{patch.role_slug}' no existe en este tenant.")
+            if was_superuser and role.slug != _SUPERUSER_SLUG:
+                await self._guard_last_superuser(exclude_id=user.id)
+            user.role_id = role.id
+
+        if "granted_permissions" in fields or "revoked_permissions" in fields:
+            user.exceptions.clear()
+            await self._add_exceptions(user, patch.granted_permissions or (), granted=True)
+            await self._add_exceptions(user, patch.revoked_permissions or (), granted=False)
+
+        refreshed = await self._users.get_by_id(user.id)
+        assert refreshed is not None
+        return _user_to_view(refreshed)
+
+    async def delete_user(self, user_id: uuid.UUID, *, current_user_id: uuid.UUID) -> UserView:
+        if user_id == current_user_id:
+            raise ConflictError("No puedes eliminar tu propio usuario.")
+        user = await self._users.get_by_id(user_id)
+        if user is None:
+            raise NotFoundError("Usuario no encontrado.")
+        if user.role is not None and user.role.slug == _SUPERUSER_SLUG:
+            await self._guard_last_superuser(exclude_id=user.id)
+        user.deleted_at = datetime.now(UTC).replace(tzinfo=None)
+        return _user_to_view(user)
+
+    async def restore_user(self, user_id: uuid.UUID) -> UserView:
+        user = await self._users.get_by_id(user_id, include_deleted=True)
+        if user is None:
+            raise NotFoundError("Usuario no encontrado.")
+        if user.deleted_at is None:
+            raise ConflictError("El usuario no está eliminado.")
+        if await self._users.exists_email(user.email, exclude_id=user.id):
+            raise ConflictError(
+                "No se puede restaurar: ya existe un usuario vigente con ese email."
+            )
+        user.deleted_at = None
+        return _user_to_view(user)
+
+    async def _guard_last_superuser(self, *, exclude_id: uuid.UUID) -> None:
+        if await self._users.count_active_superusers(exclude_id=exclude_id) == 0:
+            raise LastSuperuserError(
+                "No se puede dejar el tenant sin un superusuario activo."
+            )
 
     async def _add_exceptions(
         self, user: User, codes: tuple[str, ...], *, granted: bool

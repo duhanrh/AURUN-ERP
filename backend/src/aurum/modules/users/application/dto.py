@@ -27,6 +27,7 @@ class UserView:
     effective_permissions: frozenset[str]
     last_login_at: datetime | None = None
     created_at: datetime | None = None
+    is_deleted: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,3 +40,16 @@ class NewUser:
     role_slug: str
     granted_permissions: tuple[str, ...] = field(default_factory=tuple)
     revoked_permissions: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class UserPatch:
+    """Cambios parciales de un usuario; sólo se aplican los campos en ``fields_set``."""
+
+    full_name: str | None = None
+    role_slug: str | None = None
+    is_active: bool | None = None
+    password: str | None = None
+    granted_permissions: tuple[str, ...] | None = None
+    revoked_permissions: tuple[str, ...] | None = None
+    fields_set: frozenset[str] = frozenset()

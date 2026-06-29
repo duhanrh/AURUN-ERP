@@ -13,11 +13,16 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Index, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from aurum.shared.infrastructure.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from aurum.shared.infrastructure.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 
 class Permission(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -77,11 +82,20 @@ class RolePermission(Base):
     permission: Mapped[Permission] = relationship(lazy="selectin")
 
 
-class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class User(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     """Usuario perteneciente a un tenant."""
 
     __tablename__ = "users"
-    __table_args__ = (UniqueConstraint("tenant_id", "email", name="uq_users_tenant_id_email"),)
+    __table_args__ = (
+        # Unicidad de email solo entre usuarios vigentes (un borrado libera el email).
+        Index(
+            "uq_users_tenant_id_email",
+            "tenant_id",
+            "email",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     email: Mapped[str] = mapped_column(String(254), nullable=False)

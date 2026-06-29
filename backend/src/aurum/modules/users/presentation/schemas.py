@@ -7,7 +7,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
 
-from aurum.modules.users.application.dto import RoleView, UserView
+from aurum.modules.users.application.dto import RoleView, UserPatch, UserView
 
 
 class RoleResponse(BaseModel):
@@ -39,6 +39,7 @@ class UserResponse(BaseModel):
     permissions: list[str]
     last_login_at: datetime | None
     created_at: datetime | None
+    is_deleted: bool = False
 
     @classmethod
     def from_view(cls, view: UserView) -> UserResponse:
@@ -51,6 +52,7 @@ class UserResponse(BaseModel):
             permissions=sorted(view.effective_permissions),
             last_login_at=view.last_login_at,
             created_at=view.created_at,
+            is_deleted=view.is_deleted,
         )
 
 
@@ -61,3 +63,28 @@ class CreateUserRequest(BaseModel):
     role_slug: str = Field(min_length=1, max_length=40)
     granted_permissions: list[str] = Field(default_factory=list)
     revoked_permissions: list[str] = Field(default_factory=list)
+
+
+class UpdateUserRequest(BaseModel):
+    full_name: str | None = Field(default=None, max_length=160)
+    role_slug: str | None = Field(default=None, max_length=40)
+    is_active: bool | None = None
+    password: str | None = Field(default=None, min_length=8, max_length=128)
+    granted_permissions: list[str] | None = None
+    revoked_permissions: list[str] | None = None
+
+    def to_patch(self) -> UserPatch:
+        fields = self.model_fields_set
+        return UserPatch(
+            full_name=self.full_name,
+            role_slug=self.role_slug,
+            is_active=self.is_active,
+            password=self.password,
+            granted_permissions=tuple(self.granted_permissions)
+            if self.granted_permissions is not None
+            else None,
+            revoked_permissions=tuple(self.revoked_permissions)
+            if self.revoked_permissions is not None
+            else None,
+            fields_set=frozenset(fields),
+        )

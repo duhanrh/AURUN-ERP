@@ -20,22 +20,36 @@ from sqlalchemy import (
     Numeric,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from aurum.modules.inventory.domain.valuation import LOT_FORMS, LOT_STATUSES
-from aurum.shared.infrastructure.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from aurum.shared.infrastructure.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 _FORMS_SQL = ", ".join(f"'{f}'" for f in LOT_FORMS)
 _STATUSES_SQL = ", ".join(f"'{s}'" for s in LOT_STATUSES)
 
 
-class Material(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class Material(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     """Material del catálogo del tenant (Oro 24K, Plata .999, …)."""
 
     __tablename__ = "materials"
-    __table_args__ = (UniqueConstraint("tenant_id", "code", name="uq_materials_tenant_id_code"),)
+    __table_args__ = (
+        Index(
+            "uq_materials_tenant_id_code",
+            "tenant_id",
+            "code",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     code: Mapped[str] = mapped_column(String(16), nullable=False)
@@ -44,7 +58,7 @@ class Material(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
 
 
-class InventoryLot(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+class InventoryLot(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     """Lote de material en inventario, con trazabilidad de origen y stock vivo."""
 
     __tablename__ = "inventory_lots"
