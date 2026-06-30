@@ -18,6 +18,7 @@ import {
   updateLot,
 } from './api';
 import { ApiError } from '../auth/api';
+import { ReadOnlyHint } from '../../components/ReadOnlyHint';
 import { grams, money, purityPct } from './format';
 import { LotEditModal } from './LotEditModal';
 import { LotFormModal } from './LotFormModal';
@@ -110,7 +111,9 @@ export function InventoryPage() {
             <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
               + Nuevo Lote
             </button>
-          ) : null}
+          ) : (
+            <ReadOnlyHint permission="inventory:manage" />
+          )}
         </div>
       </div>
 

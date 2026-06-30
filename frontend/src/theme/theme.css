@@ -1547,6 +1547,18 @@ body {
 .row-deleted td.primary {
   text-decoration: line-through;
 }
+.readonly-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  white-space: nowrap;
+}
 
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {

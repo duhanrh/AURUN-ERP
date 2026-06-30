@@ -18,6 +18,7 @@ import {
   setSalesStatus,
   updateSalesOrder,
 } from './api';
+import { ReadOnlyHint } from '../../components/ReadOnlyHint';
 import { grams, money } from './format';
 import { SalesOrderEditModal } from './SalesOrderEditModal';
 import { SalesOrderFormModal } from './SalesOrderFormModal';
@@ -119,7 +120,9 @@ export function SalesPage() {
             <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
               + Nueva OV
             </button>
-          ) : null}
+          ) : (
+            <ReadOnlyHint permission="sales:manage" />
+          )}
         </div>
       </div>
 

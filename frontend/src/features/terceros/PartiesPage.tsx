@@ -10,6 +10,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { ReadOnlyHint } from '../../components/ReadOnlyHint';
 import { useAuthStore } from '../auth/authStore';
 import { createParty, deleteParty, fetchKpis, listParties, restoreParty, updateParty } from './api';
 import { DetailDrawer, type DrawerSection, type DrawerStat } from './DetailDrawer';
@@ -129,7 +130,9 @@ export function PartiesPage({ kind }: PartiesPageProps) {
             <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
               + Nuevo {isSupplier ? 'Proveedor' : 'Cliente'}
             </button>
-          ) : null}
+          ) : (
+            <ReadOnlyHint permission={`${resource}:manage`} />
+          )}
         </div>
       </div>
 

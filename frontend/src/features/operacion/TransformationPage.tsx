@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuthStore } from '../auth/authStore';
+import { ReadOnlyHint } from '../../components/ReadOnlyHint';
 import { listLots, listMaterials } from './api';
 import { grams } from './format';
 import { Pipeline } from './Pipeline';
@@ -168,7 +169,9 @@ export function TransformationPage() {
             <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
               + Nueva OT
             </button>
-          ) : null}
+          ) : (
+            <ReadOnlyHint permission="transformation:manage" />
+          )}
         </div>
       </div>
 

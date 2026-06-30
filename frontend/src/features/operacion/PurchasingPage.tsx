@@ -19,6 +19,7 @@ import {
   restorePurchaseOrder,
   updatePurchaseOrder,
 } from './api';
+import { ReadOnlyHint } from '../../components/ReadOnlyHint';
 import { grams, money, purityPct } from './format';
 import { PurchaseOrderEditModal } from './PurchaseOrderEditModal';
 import { PurchaseOrderFormModal } from './PurchaseOrderFormModal';
@@ -114,7 +115,9 @@ export function PurchasingPage() {
             <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
               + Nueva OC
             </button>
-          ) : null}
+          ) : (
+            <ReadOnlyHint permission="purchasing:manage" />
+          )}
         </div>
       </div>
 

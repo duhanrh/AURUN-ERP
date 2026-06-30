@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuthStore } from '../auth/authStore';
+import { ReadOnlyHint } from '../../components/ReadOnlyHint';
 import { listLots } from './api';
 import { purityPct } from './format';
 import {
@@ -107,7 +108,9 @@ export function QualityPage() {
             <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
               + Registrar Muestra
             </button>
-          ) : null}
+          ) : (
+            <ReadOnlyHint permission="quality:manage" />
+          )}
         </div>
       </div>
 
