@@ -74,6 +74,10 @@ jobs:
 
       - name: Pruebas (pytest, incluye aislamiento RLS)
         working-directory: backend
+        env:
+          # Modo bootstrap: la API de plataforma queda abierta para que las
+          # pruebas de integración puedan provisionar tenants sin token.
+          AURUM_ENV: local
         run: uv run pytest -q
 
   frontend:
