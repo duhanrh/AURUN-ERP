@@ -33,13 +33,11 @@ from aurum.modules.config.infrastructure.models import (
 from aurum.modules.inventory.domain.catalog import BASE_MATERIALS
 from aurum.modules.inventory.infrastructure.models import Material
 from aurum.modules.tenants.infrastructure.models import Tenant, TenantBranding
-from aurum.modules.users.domain.permissions import BASE_ROLES, PERMISSION_CATALOG, RoleDef
-from aurum.modules.users.infrastructure.models import (
-    Permission,
-    Role,
-    RolePermission,
-    User,
+from aurum.modules.users.application.role_sync import (
+    ensure_permission_catalog,
+    sync_tenant_roles,
 )
+from aurum.modules.users.infrastructure.models import User
 from aurum.shared.errors import ConflictError
 
 
@@ -75,7 +73,7 @@ class ProvisioningService:
 
     async def provision(self, data: NewTenant) -> ProvisionedTenant:
         await self._guard_unique_subdomain(data.subdomain)
-        catalog = await self._ensure_permission_catalog()
+        catalog = await ensure_permission_catalog(self._session)
 
         tenant = Tenant(
             name=data.name,
@@ -95,7 +93,7 @@ class ProvisioningService:
         self._seed_accounts(tenant.id)
         self._seed_configuration(tenant.id)
 
-        roles_by_slug = self._seed_roles(tenant.id, catalog)
+        roles_by_slug = await sync_tenant_roles(self._session, tenant.id, catalog)
         admin_role = roles_by_slug["superusuario"]
 
         password = data.admin_password or secrets.token_urlsafe(12)
@@ -125,23 +123,6 @@ class ProvisioningService:
         )
         if existing.scalar_one_or_none() is not None:
             raise ConflictError(f"El subdominio '{subdomain}' ya está en uso.")
-
-    async def _ensure_permission_catalog(self) -> dict[str, Permission]:
-        """Upsert idempotente del catálogo de permisos (tabla de plataforma)."""
-        result = await self._session.execute(select(Permission))
-        by_code = {p.code: p for p in result.scalars().all()}
-        for definition in PERMISSION_CATALOG:
-            if definition.code not in by_code:
-                perm = Permission(
-                    code=definition.code,
-                    resource=definition.resource,
-                    action=definition.action,
-                    description=definition.description,
-                )
-                self._session.add(perm)
-                by_code[definition.code] = perm
-        await self._session.flush()
-        return by_code
 
     async def _set_tenant_scope(self, tenant_id: uuid.UUID) -> None:
         await self._session.execute(
@@ -197,30 +178,3 @@ class ProvisioningService:
                 TenantModuleConfig(tenant_id=tenant_id, module_key=module.key, is_active=True)
             )
 
-    def _seed_roles(
-        self, tenant_id: uuid.UUID, catalog: dict[str, Permission]
-    ) -> dict[str, Role]:
-        roles: dict[str, Role] = {}
-        for definition in BASE_ROLES:
-            role = Role(
-                tenant_id=tenant_id,
-                slug=definition.slug,
-                name=definition.name,
-                description=definition.description,
-                is_system=True,
-            )
-            for perm in self._permissions_for(definition, catalog):
-                role.permission_links.append(
-                    RolePermission(tenant_id=tenant_id, permission_id=perm.id)
-                )
-            self._session.add(role)
-            roles[definition.slug] = role
-        return roles
-
-    @staticmethod
-    def _permissions_for(
-        definition: RoleDef, catalog: dict[str, Permission]
-    ) -> list[Permission]:
-        if definition.grants_all:
-            return list(catalog.values())
-        return [catalog[p.code] for p in definition.permissions]

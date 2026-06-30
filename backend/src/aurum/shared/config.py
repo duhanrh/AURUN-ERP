@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     # Vacío en local/dev => endpoint abierto; obligatorio fuera de local.
     platform_admin_token: str = ""
 
+    # Reconciliación del RBAC al arrancar: la BD converge a la fuente de verdad del
+    # código (catálogo de permisos + roles base) en cada despliegue. Idempotente.
+    reconcile_roles_on_startup: bool = True
+
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )

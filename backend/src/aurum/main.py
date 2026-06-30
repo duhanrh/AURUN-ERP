@@ -17,10 +17,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from aurum import __version__
 from aurum.api import build_api_router
 from aurum.modules.publicapi.presentation.public_router import router as public_api_router
+from aurum.modules.users.application.role_sync import reconcile_all_tenants
 from aurum.shared.config import Settings, get_settings
 from aurum.shared.errors import register_exception_handlers
 from aurum.shared.health import router as health_router
-from aurum.shared.infrastructure.database import dispose_engine
+from aurum.shared.infrastructure.database import dispose_engine, get_session_factory
 from aurum.shared.logging import configure_logging
 from aurum.shared.middleware import (
     RequestContextMiddleware,
@@ -28,10 +29,25 @@ from aurum.shared.middleware import (
     TenantResolutionMiddleware,
 )
 
+logger = logging.getLogger("aurum.startup")
+
 
 @asynccontextmanager
-async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
-    """Ciclo de vida: libera recursos (engine de BD) al apagar."""
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Ciclo de vida: reconcilia el RBAC al arrancar y libera recursos al apagar."""
+    settings: Settings = app.state.settings
+    if settings.reconcile_roles_on_startup:
+        try:
+            tenants, touched = await reconcile_all_tenants(get_session_factory())
+            logger.info(
+                "RBAC reconciliado al arranque: %d tenant(s), %d rol(es) asegurados.",
+                tenants,
+                touched,
+            )
+        except Exception:  # noqa: BLE001 — no impedir el arranque por esto
+            logger.exception(
+                "No se pudo reconciliar el RBAC al arranque (¿BD/migraciones?); se continúa."
+            )
     yield
     await dispose_engine()
 
@@ -50,6 +66,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         debug=settings.debug,
         lifespan=_lifespan,
     )
+    app.state.settings = settings
 
     # Middleware. El último añadido es el más externo (se ejecuta primero):
     # RequestContext (request_id) envuelve a la resolución de tenant.
