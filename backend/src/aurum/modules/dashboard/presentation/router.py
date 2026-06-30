@@ -15,6 +15,7 @@ from aurum.modules.accounting.presentation.router import build_accounting_servic
 from aurum.modules.auth.presentation.dependencies import require_permission
 from aurum.modules.config.infrastructure.repositories import SqlAlchemyParametersRepository
 from aurum.modules.dashboard.application.services import DashboardService
+from aurum.modules.dashboard.infrastructure.spot_provider import get_spot_prices
 from aurum.modules.dashboard.presentation.schemas import DashboardSummaryResponse
 from aurum.modules.inventory.infrastructure.repositories import (
     SqlAlchemyLotRepository,
@@ -43,6 +44,7 @@ def _service(session: AsyncSession, tenant_id: uuid.UUID) -> DashboardService:
         samples=SqlAlchemyQualitySampleRepository(session),
         accounting=build_accounting_service(session, tenant_id),
         parameters=SqlAlchemyParametersRepository(session),
+        spot_provider=get_spot_prices,
     )
 
 

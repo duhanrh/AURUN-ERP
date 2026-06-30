@@ -23,7 +23,7 @@ from aurum.modules.dashboard.application.dto import (
     RecentTransaction,
     SpotPriceView,
 )
-from aurum.modules.dashboard.domain.spot import get_spot_prices
+from aurum.modules.dashboard.domain.spot import SpotProvider
 from aurum.modules.inventory.application.ports import LotRepository, MaterialRepository
 from aurum.modules.inventory.domain.valuation import valuation_usd
 from aurum.modules.purchasing.application.ports import PurchaseOrderRepository
@@ -45,6 +45,7 @@ class DashboardService:
         samples: QualitySampleRepository,
         accounting: AccountingService,
         parameters: ParametersRepository,
+        spot_provider: SpotProvider,
     ) -> None:
         self._lots = lots
         self._materials = materials
@@ -53,6 +54,7 @@ class DashboardService:
         self._samples = samples
         self._accounting = accounting
         self._parameters = parameters
+        self._spot_provider = spot_provider
 
     async def summary(self) -> DashboardSummary:
         lots = await self._lots.list_all()
@@ -192,7 +194,7 @@ class DashboardService:
                 change_pct=p.change_pct,
                 stale=p.stale,
             )
-            for p in get_spot_prices()
+            for p in await self._spot_provider()
         ]
 
         return DashboardSummary(

@@ -13,7 +13,7 @@ from decimal import Decimal
 
 from aurum.modules.accounting.application.services import AccountingService
 from aurum.modules.config.application.ports import BrandingRepository, ParametersRepository
-from aurum.modules.dashboard.domain.spot import get_spot_prices
+from aurum.modules.dashboard.domain.spot import SpotProvider
 from aurum.modules.inventory.application.ports import LotRepository, MaterialRepository
 from aurum.modules.inventory.domain.valuation import fine_weight_g, valuation_usd
 from aurum.modules.purchasing.application.ports import PurchaseOrderRepository
@@ -53,6 +53,7 @@ class ReportsService:
         accounting: AccountingService,
         branding: BrandingRepository,
         parameters: ParametersRepository,
+        spot_provider: SpotProvider,
     ) -> None:
         self._lots = lots
         self._materials = materials
@@ -63,6 +64,7 @@ class ReportsService:
         self._accounting = accounting
         self._branding = branding
         self._parameters = parameters
+        self._spot_provider = spot_provider
 
     def list_types(self) -> list[ReportTypeView]:
         return [
@@ -213,7 +215,7 @@ class ReportsService:
 
     async def _price_analysis(self) -> tuple[list[str], list[list[str]], list[SummaryItem]]:
         lots = await self._lots.list_all()
-        spot = {p.symbol: p.price_usd_per_oz for p in get_spot_prices()}
+        spot = {p.symbol: p.price_usd_per_oz for p in await self._spot_provider()}
         sum_price: dict[str, Decimal] = defaultdict(lambda: ZERO)
         count: dict[str, int] = defaultdict(int)
         sym_name: dict[str, str] = {}

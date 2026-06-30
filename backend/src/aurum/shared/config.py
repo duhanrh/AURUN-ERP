@@ -66,6 +66,16 @@ class Settings(BaseSettings):
     # código (catálogo de permisos + roles base) en cada despliegue. Idempotente.
     reconcile_roles_on_startup: bool = True
 
+    # Precios spot de metales (Dashboard, sección 7.16). Si la URL está vacía, el
+    # adaptador degrada al último precio conocido / fallback estático (``stale=true``)
+    # sin llamar a la red. El endpoint debe devolver USD/oz por símbolo en ``prices``
+    # o tasas metal-por-USD en ``rates`` (se invierte). ``spot_api_key`` se envía como
+    # cabecera ``X-API-KEY`` y como query ``api_key`` (según el proveedor).
+    spot_provider_url: str = ""
+    spot_api_key: str = ""
+    spot_cache_ttl_seconds: int = 300
+    spot_request_timeout_seconds: float = 4.0
+
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )

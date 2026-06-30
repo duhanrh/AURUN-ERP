@@ -17,6 +17,7 @@ from aurum.modules.config.infrastructure.repositories import (
     SqlAlchemyBrandingRepository,
     SqlAlchemyParametersRepository,
 )
+from aurum.modules.dashboard.infrastructure.spot_provider import get_spot_prices
 from aurum.modules.inventory.infrastructure.repositories import (
     SqlAlchemyLotRepository,
     SqlAlchemyMaterialRepository,
@@ -62,6 +63,7 @@ def _service(session: AsyncSession, tenant_id: uuid.UUID) -> ReportsService:
         accounting=build_accounting_service(session, tenant_id),
         branding=SqlAlchemyBrandingRepository(session),
         parameters=SqlAlchemyParametersRepository(session),
+        spot_provider=get_spot_prices,
     )
 
 
