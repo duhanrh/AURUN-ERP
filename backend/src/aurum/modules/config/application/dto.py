@@ -58,3 +58,32 @@ class ModuleView:
     key: str
     label: str
     is_active: bool
+
+
+@dataclass(frozen=True, slots=True)
+class UnitView:
+    id: str
+    code: str
+    name: str
+    symbol: str
+    grams_factor: Decimal
+    is_base: bool
+    is_active: bool
+    is_deleted: bool
+
+
+@dataclass(frozen=True, slots=True)
+class UnitCreate:
+    code: str
+    name: str
+    symbol: str
+    grams_factor: Decimal
+    is_active: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class UnitPatch:
+    name: str | None = None
+    symbol: str | None = None
+    grams_factor: Decimal | None = None
+    is_active: bool | None = None

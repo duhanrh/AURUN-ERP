@@ -1802,6 +1802,50 @@ body {
   font-weight: 700;
 }
 
+/* ── UNIDADES DE MEDIDA + CONVERSOR (Configuración) ── */
+.inline-num {
+  width: 110px;
+  text-align: right;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--text-primary);
+  font-family: 'Space Grotesk', monospace;
+  font-size: 12px;
+}
+.inline-num:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.converter-row {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1.2fr auto;
+  gap: 12px;
+  align-items: end;
+}
+.converter-row .field {
+  margin-bottom: 0;
+}
+.converter-row .btn {
+  height: 38px;
+}
+.converter-result {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.converter-result strong {
+  color: var(--gold);
+  font-family: 'Space Grotesk', monospace;
+  font-size: 16px;
+}
+@media (max-width: 900px) {
+  .converter-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
   .sidebar {

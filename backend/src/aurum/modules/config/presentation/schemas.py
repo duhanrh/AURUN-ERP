@@ -12,6 +12,9 @@ from aurum.modules.config.application.dto import (
     ModuleView,
     ParametersUpdate,
     ParametersView,
+    UnitCreate,
+    UnitPatch,
+    UnitView,
 )
 
 _HEX = r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
@@ -121,3 +124,73 @@ class ModuleResponse(BaseModel):
 
 class SetModuleRequest(BaseModel):
     is_active: bool
+
+
+class UnitResponse(BaseModel):
+    id: str
+    code: str
+    name: str
+    symbol: str
+    grams_factor: Decimal
+    is_base: bool
+    is_active: bool
+    is_deleted: bool
+
+    @classmethod
+    def from_view(cls, v: UnitView) -> UnitResponse:
+        return cls(
+            id=v.id,
+            code=v.code,
+            name=v.name,
+            symbol=v.symbol,
+            grams_factor=v.grams_factor,
+            is_base=v.is_base,
+            is_active=v.is_active,
+            is_deleted=v.is_deleted,
+        )
+
+
+class CreateUnitRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=32)
+    name: str = Field(min_length=1, max_length=64)
+    symbol: str = Field(min_length=1, max_length=8)
+    grams_factor: Decimal = Field(gt=0)
+    is_active: bool = True
+
+    def to_dto(self) -> UnitCreate:
+        return UnitCreate(
+            code=self.code,
+            name=self.name,
+            symbol=self.symbol,
+            grams_factor=self.grams_factor,
+            is_active=self.is_active,
+        )
+
+
+class UpdateUnitRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=64)
+    symbol: str | None = Field(default=None, min_length=1, max_length=8)
+    grams_factor: Decimal | None = Field(default=None, gt=0)
+    is_active: bool | None = None
+
+    def to_patch(self) -> UnitPatch:
+        return UnitPatch(
+            name=self.name,
+            symbol=self.symbol,
+            grams_factor=self.grams_factor,
+            is_active=self.is_active,
+        )
+
+
+class ConvertRequest(BaseModel):
+    quantity: Decimal = Field(ge=0)
+    from_unit: str = Field(min_length=1, max_length=32)
+    to_unit: str = Field(min_length=1, max_length=32)
+
+
+class ConvertResponse(BaseModel):
+    quantity: Decimal
+    from_unit: str
+    to_unit: str
+    grams: Decimal
+    result: Decimal

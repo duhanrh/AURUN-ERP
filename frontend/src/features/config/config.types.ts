@@ -38,6 +38,40 @@ export interface ModuleConfig {
   is_active: boolean;
 }
 
+export interface UnitOfMeasure {
+  id: string;
+  code: string;
+  name: string;
+  symbol: string;
+  grams_factor: string;
+  is_base: boolean;
+  is_active: boolean;
+  is_deleted: boolean;
+}
+
+export interface CreateUnitInput {
+  code: string;
+  name: string;
+  symbol: string;
+  grams_factor: string;
+  is_active?: boolean;
+}
+
+export interface UpdateUnitInput {
+  name?: string;
+  symbol?: string;
+  grams_factor?: string;
+  is_active?: boolean;
+}
+
+export interface ConversionResult {
+  quantity: string;
+  from_unit: string;
+  to_unit: string;
+  grams: string;
+  result: string;
+}
+
 export interface ApiKey {
   id: string;
   name: string;

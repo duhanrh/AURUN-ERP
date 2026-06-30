@@ -12,8 +12,9 @@ import { ApiKeysTab } from './ApiKeysTab';
 import { AppearanceTab } from './AppearanceTab';
 import { ModulesTab } from './ModulesTab';
 import { ParametersTab } from './ParametersTab';
+import { UnitsTab } from './UnitsTab';
 
-type Tab = 'apariencia' | 'modulos' | 'parametros' | 'usuarios' | 'apikeys';
+type Tab = 'apariencia' | 'modulos' | 'parametros' | 'unidades' | 'usuarios' | 'apikeys';
 
 export function ConfiguracionPage() {
   const canAccess = useAuthStore((s) => s.hasPermission('configuration:access'));
@@ -41,6 +42,9 @@ export function ConfiguracionPage() {
         <button className={`tab ${tab === 'parametros' ? 'active' : ''}`} onClick={() => setTab('parametros')}>
           Parámetros
         </button>
+        <button className={`tab ${tab === 'unidades' ? 'active' : ''}`} onClick={() => setTab('unidades')}>
+          Unidades
+        </button>
         <button className={`tab ${tab === 'usuarios' ? 'active' : ''}`} onClick={() => setTab('usuarios')}>
           Usuarios y Roles
         </button>
@@ -52,6 +56,7 @@ export function ConfiguracionPage() {
       {tab === 'apariencia' ? <AppearanceTab /> : null}
       {tab === 'modulos' ? <ModulesTab /> : null}
       {tab === 'parametros' ? <ParametersTab /> : null}
+      {tab === 'unidades' ? <UnitsTab /> : null}
       {tab === 'usuarios' ? <UsersRolesPage /> : null}
       {tab === 'apikeys' ? <ApiKeysTab /> : null}
     </div>

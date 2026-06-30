@@ -12,11 +12,16 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, Index, Numeric, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from aurum.shared.infrastructure.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from aurum.shared.infrastructure.base import (
+    Base,
+    SoftDeleteMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
 
 
 class TenantBusinessParameters(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -54,4 +59,33 @@ class TenantModuleConfig(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     module_key: Mapped[str] = mapped_column(String(40), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+
+class UnitOfMeasure(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
+    """Unidad de medida de peso configurable por tenant (sección 7.17).
+
+    ``grams_factor`` = gramos que equivalen a 1 unidad; el gramo es la base
+    (factor 1, ``is_base=True``). El ``code`` es único por tenant entre las
+    unidades vigentes (índice parcial ``WHERE deleted_at IS NULL``), de modo que
+    reutilizar el código de una unidad eliminada no choca.
+    """
+
+    __tablename__ = "units_of_measure"
+    __table_args__ = (
+        Index(
+            "uq_units_of_measure_tenant_id_code",
+            "tenant_id",
+            "code",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    code: Mapped[str] = mapped_column(String(32), nullable=False)
+    name: Mapped[str] = mapped_column(String(64), nullable=False)
+    symbol: Mapped[str] = mapped_column(String(8), nullable=False)
+    grams_factor: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    is_base: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")

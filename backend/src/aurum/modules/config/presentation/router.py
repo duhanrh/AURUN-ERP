@@ -16,6 +16,10 @@ from aurum.modules.audit.domain.actions import (
     CONFIG_BRANDING_UPDATE,
     CONFIG_MODULE_TOGGLE,
     CONFIG_PARAMETERS_UPDATE,
+    UNIT_CREATE,
+    UNIT_DELETE,
+    UNIT_RESTORE,
+    UNIT_UPDATE,
 )
 from aurum.modules.audit.presentation.recorder import record_event
 from aurum.modules.auth.presentation.dependencies import (
@@ -24,18 +28,25 @@ from aurum.modules.auth.presentation.dependencies import (
     require_permission,
 )
 from aurum.modules.config.application.services import ConfigService
+from aurum.modules.config.application.units_service import UnitOfMeasureService
 from aurum.modules.config.infrastructure.repositories import (
     SqlAlchemyBrandingRepository,
     SqlAlchemyModuleConfigRepository,
     SqlAlchemyParametersRepository,
+    SqlAlchemyUnitOfMeasureRepository,
 )
 from aurum.modules.config.presentation.schemas import (
     BrandingResponse,
+    ConvertRequest,
+    ConvertResponse,
+    CreateUnitRequest,
     ModuleResponse,
     ParametersResponse,
     SetModuleRequest,
+    UnitResponse,
     UpdateBrandingRequest,
     UpdateParametersRequest,
+    UpdateUnitRequest,
 )
 from aurum.shared.dependencies import get_session, require_tenant_id
 
@@ -51,6 +62,12 @@ def _service(session: AsyncSession) -> ConfigService:
         branding=SqlAlchemyBrandingRepository(session),
         parameters=SqlAlchemyParametersRepository(session),
         modules=SqlAlchemyModuleConfigRepository(session),
+    )
+
+
+def _units(session: AsyncSession, tenant_id: uuid.UUID) -> UnitOfMeasureService:
+    return UnitOfMeasureService(
+        tenant_id=tenant_id, units=SqlAlchemyUnitOfMeasureRepository(session)
     )
 
 
@@ -157,3 +174,120 @@ async def set_module(
         changes={"module_key": module_key, "is_active": payload.is_active},
     )
     return ModuleResponse.from_view(view)
+
+
+# ── Unidades de medida ───────────────────────────────────────────────────────
+@router.get("/units", response_model=list[UnitResponse], dependencies=[_read])
+async def list_units(
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    include_deleted: bool = False,
+) -> list[UnitResponse]:
+    views = await _units(session, tenant_id).list_units(include_deleted=include_deleted)
+    return [UnitResponse.from_view(v) for v in views]
+
+
+@router.post("/units/convert", response_model=ConvertResponse, dependencies=[_read])
+async def convert_units(
+    payload: ConvertRequest,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+) -> ConvertResponse:
+    res = await _units(session, tenant_id).convert(
+        payload.quantity, payload.from_unit, payload.to_unit
+    )
+    return ConvertResponse(
+        quantity=payload.quantity,
+        from_unit=payload.from_unit,
+        to_unit=payload.to_unit,
+        grams=res.grams,
+        result=res.result,
+    )
+
+
+@router.post("/units", response_model=UnitResponse)
+async def create_unit(
+    payload: CreateUnitRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> UnitResponse:
+    view = await _units(session, tenant_id).create_unit(payload.to_dto())
+    await record_event(
+        session,
+        tenant_id,
+        action=UNIT_CREATE,
+        entity_type="unit_of_measure",
+        entity_id=uuid.UUID(view.id),
+        principal=principal,
+        request=request,
+        changes={"code": view.code, "grams_factor": str(view.grams_factor)},
+    )
+    return UnitResponse.from_view(view)
+
+
+@router.patch("/units/{unit_id}", response_model=UnitResponse)
+async def update_unit(
+    unit_id: uuid.UUID,
+    payload: UpdateUnitRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> UnitResponse:
+    view = await _units(session, tenant_id).update_unit(unit_id, payload.to_patch())
+    await record_event(
+        session,
+        tenant_id,
+        action=UNIT_UPDATE,
+        entity_type="unit_of_measure",
+        entity_id=unit_id,
+        principal=principal,
+        request=request,
+        changes=payload.model_dump(exclude_unset=True, mode="json"),
+    )
+    return UnitResponse.from_view(view)
+
+
+@router.delete("/units/{unit_id}", response_model=UnitResponse)
+async def delete_unit(
+    unit_id: uuid.UUID,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> UnitResponse:
+    view = await _units(session, tenant_id).delete_unit(unit_id)
+    await record_event(
+        session,
+        tenant_id,
+        action=UNIT_DELETE,
+        entity_type="unit_of_measure",
+        entity_id=unit_id,
+        principal=principal,
+        request=request,
+        changes={"code": view.code},
+    )
+    return UnitResponse.from_view(view)
+
+
+@router.post("/units/{unit_id}/restore", response_model=UnitResponse)
+async def restore_unit(
+    unit_id: uuid.UUID,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> UnitResponse:
+    view = await _units(session, tenant_id).restore_unit(unit_id)
+    await record_event(
+        session,
+        tenant_id,
+        action=UNIT_RESTORE,
+        entity_type="unit_of_measure",
+        entity_id=unit_id,
+        principal=principal,
+        request=request,
+    )
+    return UnitResponse.from_view(view)

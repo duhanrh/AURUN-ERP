@@ -26,9 +26,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from aurum.modules.accounting.domain.chart import BASE_ACCOUNTS
 from aurum.modules.accounting.infrastructure.models import ChartAccount
 from aurum.modules.config.domain.settings import DEFAULT_PARAMETERS, TOGGLEABLE_MODULES
+from aurum.modules.config.domain.units import BASE_UNITS
 from aurum.modules.config.infrastructure.models import (
     TenantBusinessParameters,
     TenantModuleConfig,
+    UnitOfMeasure,
 )
 from aurum.modules.inventory.domain.catalog import BASE_MATERIALS
 from aurum.modules.inventory.infrastructure.models import Material
@@ -92,6 +94,7 @@ class ProvisioningService:
         self._seed_materials(tenant.id)
         self._seed_accounts(tenant.id)
         self._seed_configuration(tenant.id)
+        self._seed_units(tenant.id)
 
         roles_by_slug = await sync_tenant_roles(self._session, tenant.id, catalog)
         admin_role = roles_by_slug["superusuario"]
@@ -139,6 +142,21 @@ class ProvisioningService:
                     code=definition.code,
                     name=definition.name,
                     symbol=definition.symbol,
+                    is_active=True,
+                )
+            )
+
+    def _seed_units(self, tenant_id: uuid.UUID) -> None:
+        """Siembra el catálogo base de unidades de medida del tenant (sección 7.17)."""
+        for definition in BASE_UNITS:
+            self._session.add(
+                UnitOfMeasure(
+                    tenant_id=tenant_id,
+                    code=definition.code,
+                    name=definition.name,
+                    symbol=definition.symbol,
+                    grams_factor=definition.grams_factor,
+                    is_base=definition.is_base,
                     is_active=True,
                 )
             )
