@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 
+import { SearchableSelect, type SelectOption } from '../../components/SearchableSelect';
 import { ApiError } from '../auth/api';
 import { purityPct } from './format';
 import type { AnalysisMethod, CreateSampleInput, SampleResult } from './procesos.types';
@@ -25,9 +26,16 @@ export function SampleFormModal({ lots, submitting, onSubmit, onClose }: Props) 
 
   const selectedLot = lots.find((l) => l.id === lotId) ?? null;
 
+  const lotOptions: SelectOption[] = lots.map((l) => ({
+    value: l.id,
+    label: `${l.lot_code} · ${l.material_name}`,
+    hint: purityPct(l.declared_purity),
+  }));
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!lotId) return setError('Selecciona un lote de origen.');
     try {
       await onSubmit({
         lot_id: lotId,
@@ -53,14 +61,13 @@ export function SampleFormModal({ lots, submitting, onSubmit, onClose }: Props) 
         <div className="modal-body">
           <label className="field">
             <span>Lote de origen</span>
-            <select value={lotId} onChange={(e) => setLotId(e.target.value)} required>
-              {lots.length === 0 ? <option value="">— Sin lotes —</option> : null}
-              {lots.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.lot_code} · {l.material_name}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              options={lotOptions}
+              value={lotId}
+              onChange={setLotId}
+              placeholder="Buscar lote…"
+              emptyText="Sin lotes"
+            />
           </label>
           {selectedLot ? (
             <p className="field-hint">Pureza declarada del lote: {purityPct(selectedLot.declared_purity)}</p>

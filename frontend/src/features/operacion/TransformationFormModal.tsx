@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type FormEvent } from 'react';
 
+import { SearchableSelect, type SelectOption } from '../../components/SearchableSelect';
 import { ApiError } from '../auth/api';
 import { grams } from './format';
 import type { CreateTransformationInput, Process } from './procesos.types';
@@ -29,9 +30,22 @@ export function TransformationFormModal({ lots, materials, submitting, onSubmit,
 
   const selectedLot = usable.find((l) => l.id === inputLotId) ?? null;
 
+  const lotOptions: SelectOption[] = usable.map((l) => ({
+    value: l.id,
+    label: `${l.lot_code} · ${l.material_name}`,
+    hint: grams(l.available_weight_g),
+  }));
+  const materialOptions: SelectOption[] = materials.map((m) => ({
+    value: m.id,
+    label: m.name,
+    hint: m.code,
+  }));
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!inputLotId) return setError('Selecciona un lote de entrada.');
+    if (!outputMaterialId) return setError('Selecciona el material de salida.');
     try {
       await onSubmit({
         input_lot_id: inputLotId,
@@ -60,14 +74,13 @@ export function TransformationFormModal({ lots, materials, submitting, onSubmit,
         <div className="modal-body">
           <label className="field">
             <span>Lote de entrada</span>
-            <select value={inputLotId} onChange={(e) => setInputLotId(e.target.value)} required>
-              {usable.length === 0 ? <option value="">— Sin lotes con stock —</option> : null}
-              {usable.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.lot_code} · {l.material_name} ({grams(l.available_weight_g)} disp.)
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              options={lotOptions}
+              value={inputLotId}
+              onChange={setInputLotId}
+              placeholder="Buscar lote con stock…"
+              emptyText="Sin lotes con stock"
+            />
           </label>
           <div className="field-row">
             <label className="field">
@@ -96,17 +109,12 @@ export function TransformationFormModal({ lots, materials, submitting, onSubmit,
           <div className="field-row">
             <label className="field">
               <span>Material de salida</span>
-              <select
+              <SearchableSelect
+                options={materialOptions}
                 value={outputMaterialId}
-                onChange={(e) => setOutputMaterialId(e.target.value)}
-                required
-              >
-                {materials.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setOutputMaterialId}
+                placeholder="Buscar material…"
+              />
             </label>
             <label className="field">
               <span>Rendimiento (%)</span>
