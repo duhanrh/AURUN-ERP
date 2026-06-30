@@ -6,27 +6,53 @@
  */
 
 :root {
-  /* Tokens de marca (tema Aurum por defecto) — sobreescritos por ThemeProvider */
+  /* Tokens de marca (acento) — el ThemeProvider los sobreescribe por tenant.
+     Son idénticos en ambos modos: lo que personaliza el tenant es la marca,
+     lo que cambia el conmutador es el modo (claro/oscuro). */
   --gold: #c9a84c;
   --gold-light: #e8c96a;
   --gold-dim: #7a6228;
-  --bg-deep: #0a0a0b;
   --green: #3daa6e;
   --red: #d45454;
 
-  /* Tokens estructurales (constantes) */
-  --bg-panel: #13131a;
-  --bg-card: #1a1a24;
-  --bg-hover: #22222e;
-  --border: #2a2a38;
+  /* Tinta oscura constante para texto/iconos SOBRE superficies doradas
+     (el dorado es claro en ambos modos, así que la tinta siempre es oscura). */
+  --ink-on-gold: #0a0a0b;
+
+  /* Acentos auxiliares (constantes) */
   --border-gold: rgba(201, 168, 76, 0.3);
-  --text-primary: #f0ede8;
-  --text-secondary: #8a8a9a;
-  --text-dim: #4a4a5a;
   --blue: #4a7cc7;
   --emerald: #2d6b5a;
   --silver: #a8b0c0;
   --platinum: #d8dce8;
+
+  /* ── Superficies y texto — TEMA CLARO (por defecto) ── */
+  --bg-deep: #f5f6f8; /* fondo de página */
+  --bg-panel: #ffffff; /* sidebar / topbar / modales */
+  --bg-card: #ffffff; /* tarjetas */
+  --bg-hover: #eef1f5; /* hover */
+  --bg-input: #ffffff; /* campos de formulario */
+  --border: #e3e7ed;
+  --text-primary: #1b1e27;
+  --text-secondary: #5c6473;
+  --text-dim: #98a0ad;
+  --overlay: rgba(20, 24, 34, 0.45);
+  --shadow-menu: 0 12px 28px rgba(20, 26, 40, 0.16);
+}
+
+/* ── TEMA OSCURO (el original "Aurum"); se activa con [data-theme='dark'] ── */
+:root[data-theme='dark'] {
+  --bg-deep: #0a0a0b;
+  --bg-panel: #13131a;
+  --bg-card: #1a1a24;
+  --bg-hover: #22222e;
+  --bg-input: #0a0a0b;
+  --border: #2a2a38;
+  --text-primary: #f0ede8;
+  --text-secondary: #8a8a9a;
+  --text-dim: #4a4a5a;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --shadow-menu: 0 12px 28px rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -78,7 +104,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  color: var(--bg-deep);
+  color: var(--ink-on-gold);
   overflow: hidden;
 }
 .logo-icon img {
@@ -352,7 +378,7 @@ body {
 .btn-primary {
   background: linear-gradient(135deg, var(--gold), var(--gold-dim));
   border-color: transparent;
-  color: var(--bg-deep);
+  color: var(--ink-on-gold);
 }
 .btn-primary:hover {
   filter: brightness(1.08);
@@ -379,7 +405,7 @@ body {
 }
 .field input,
 .field select {
-  background: var(--bg-deep);
+  background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: 7px;
   padding: 10px 12px;
@@ -504,7 +530,7 @@ body {
 }
 .splash-symbol {
   font-size: 30px;
-  color: var(--bg-deep);
+  color: var(--ink-on-gold);
   background: linear-gradient(135deg, var(--gold-light), var(--gold-dim));
   box-shadow: 0 0 28px rgba(201, 168, 76, 0.35);
   animation: splash-pulse 2.2s ease-in-out infinite;
@@ -684,7 +710,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -888,7 +914,7 @@ body {
 .pipe-step.active .pipe-dot {
   border-color: var(--gold);
   background: var(--gold);
-  color: var(--bg-deep);
+  color: var(--ink-on-gold);
 }
 .pipe-step.blocked .pipe-dot {
   border-color: var(--red);
@@ -929,7 +955,7 @@ body {
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay);
   display: flex;
   justify-content: flex-end;
   z-index: 200;
@@ -957,7 +983,7 @@ body {
   flex-shrink: 0;
   border-radius: 10px;
   background: linear-gradient(135deg, var(--gold), var(--gold-dim));
-  color: var(--bg-deep);
+  color: var(--ink-on-gold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1109,7 +1135,7 @@ body {
   gap: 12px;
   padding: 10px 18px;
   font-size: 12px;
-  border-bottom: 1px solid rgba(42, 42, 56, 0.5);
+  border-bottom: 1px solid var(--border);
   align-items: center;
 }
 .ledger-entry.head {
@@ -1172,7 +1198,7 @@ body {
   display: flex;
   justify-content: space-between;
   padding: 9px 0;
-  border-bottom: 1px solid rgba(42, 42, 56, 0.5);
+  border-bottom: 1px solid var(--border);
   font-size: 12px;
 }
 .balance-row .label {
@@ -1737,7 +1763,7 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-menu);
 }
 .ss-option {
   display: flex;

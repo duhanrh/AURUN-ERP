@@ -1,6 +1,7 @@
 /** Barra superior — réplica de `.topbar` de la maqueta. */
 
 import { PriceTicker } from './PriceTicker';
+import { ThemeToggle } from './ThemeToggle';
 
 interface AppTopbarProps {
   title: string;
@@ -16,6 +17,7 @@ export function AppTopbar({ title, subtitle }: AppTopbarProps) {
       </div>
       <PriceTicker />
       <div className="topbar-actions">
+        <ThemeToggle />
         <div className="icon-btn" title="Nueva Transacción">
           +
         </div>

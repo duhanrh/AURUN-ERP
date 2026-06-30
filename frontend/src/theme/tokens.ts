@@ -77,12 +77,16 @@ export const THEME_PRESETS: Record<string, BrandTokens> = {
   copper: { gold: '#C77D4A', goldLight: '#D4A574', goldDim: '#7A4A28', bgDeep: '#120D0A', green: '#3DAA6E', red: '#D45454' },
 };
 
-/** Mapeo de tokens de marca → nombres de CSS Custom Properties. */
-export const BRAND_CSS_VARS: Record<keyof BrandTokens, string> = {
+/**
+ * Mapeo de tokens de marca → CSS Custom Properties que el ThemeProvider aplica
+ * en runtime. `bgDeep` se omite a propósito: el fondo de página lo gobierna el
+ * **modo claro/oscuro** (atributo `data-theme`), no el branding del tenant, para
+ * que el conmutador de tema funcione de forma consistente. Ver `themeMode.ts`.
+ */
+export const BRAND_CSS_VARS: Partial<Record<keyof BrandTokens, string>> = {
   gold: '--gold',
   goldLight: '--gold-light',
   goldDim: '--gold-dim',
-  bgDeep: '--bg-deep',
   green: '--green',
   red: '--red',
 };

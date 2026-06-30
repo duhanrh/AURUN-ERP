@@ -10,13 +10,37 @@
       rel="stylesheet"
     />
     <title>Aurum ERP — Sistema de Gestión Minera</title>
+    <script>
+      /* Fija el modo (claro/oscuro) ANTES del primer pintado para evitar el
+         parpadeo. Arranca en claro; recuerda la elección en localStorage.
+         El store de React (themeMode.ts) lee este mismo atributo al iniciar. */
+      (function () {
+        try {
+          var t = localStorage.getItem('aurum-theme');
+          document.documentElement.dataset.theme = t === 'dark' ? 'dark' : 'light';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
     <style>
-      /* Splash previo a la hidratación (evita el parpadeo blanco antes del JS).
-         La app React monta un splash idéntico y luego lo reemplaza. */
+      /* Splash previo a la hidratación (evita el parpadeo antes del JS).
+         La app React monta un splash idéntico y luego lo reemplaza. Los colores
+         siguen el modo activo vía el atributo data-theme fijado arriba. */
+      html {
+        --boot-bg: #f5f6f8;
+        --boot-ink: #1b1e27;
+        --boot-dim: #98a0ad;
+      }
+      html[data-theme='dark'] {
+        --boot-bg: #0a0a0b;
+        --boot-ink: #f0ede8;
+        --boot-dim: #4a4a5a;
+      }
       html,
       body {
         margin: 0;
-        background: #0a0a0b;
+        background: var(--boot-bg);
       }
       #boot {
         position: fixed;
@@ -27,7 +51,7 @@
         justify-content: center;
         gap: 16px;
         background: radial-gradient(120% 90% at 50% 38%, rgba(201, 168, 76, 0.1), transparent 60%),
-          #0a0a0b;
+          var(--boot-bg);
         font-family: 'Space Grotesk', system-ui, sans-serif;
       }
       #boot .emblem {
@@ -46,13 +70,13 @@
         font-size: 22px;
         font-weight: 600;
         letter-spacing: 2px;
-        color: #f0ede8;
+        color: var(--boot-ink);
       }
       #boot .tagline {
         font-size: 12px;
         letter-spacing: 3px;
         text-transform: uppercase;
-        color: #4a4a5a;
+        color: var(--boot-dim);
       }
       @keyframes boot-pulse {
         0%,

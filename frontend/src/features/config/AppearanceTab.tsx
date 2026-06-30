@@ -31,7 +31,6 @@ export function AppearanceTab() {
         tagline: b.tagline,
         logo_url: b.logo_url,
         color_primary: b.color_primary ?? DEFAULT_BRAND.gold,
-        color_background: b.color_background ?? DEFAULT_BRAND.bgDeep,
         color_success: b.color_success ?? DEFAULT_BRAND.green,
         color_danger: b.color_danger ?? DEFAULT_BRAND.red,
       });
@@ -94,10 +93,12 @@ export function AppearanceTab() {
 
       <div className="color-grid">
         <ColorField label="Primario" value={form.color_primary} disabled={!canManage} onChange={(v) => set({ color_primary: v })} />
-        <ColorField label="Fondo" value={form.color_background} disabled={!canManage} onChange={(v) => set({ color_background: v })} />
         <ColorField label="Éxito" value={form.color_success} disabled={!canManage} onChange={(v) => set({ color_success: v })} />
         <ColorField label="Alerta" value={form.color_danger} disabled={!canManage} onChange={(v) => set({ color_danger: v })} />
       </div>
+      <p className="field-hint">
+        El fondo claro/oscuro se cambia con el conmutador de tema (☀/🌙) del encabezado.
+      </p>
 
       {canManage ? (
         <div className="preset-row">

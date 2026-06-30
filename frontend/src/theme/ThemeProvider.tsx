@@ -12,7 +12,8 @@ import { BRAND_CSS_VARS, type BrandTokens } from './tokens';
 function applyTokens(tokens: BrandTokens): void {
   const root = document.documentElement.style;
   (Object.keys(BRAND_CSS_VARS) as (keyof BrandTokens)[]).forEach((key) => {
-    root.setProperty(BRAND_CSS_VARS[key], tokens[key]);
+    const cssVar = BRAND_CSS_VARS[key];
+    if (cssVar) root.setProperty(cssVar, tokens[key]);
   });
 }
 
