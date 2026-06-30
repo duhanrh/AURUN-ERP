@@ -118,8 +118,13 @@ async def update_user(
 ) -> UserResponse:
     view = await _build_service(session, tenant_id).update_user(user_id, payload.to_patch())
     await record_event(
-        session, tenant_id, action=USER_UPDATE, entity_type="user",
-        entity_id=user_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=USER_UPDATE,
+        entity_type="user",
+        entity_id=user_id,
+        principal=principal,
+        request=request,
         changes=payload.model_dump(exclude_unset=True, exclude={"password"}),
     )
     return UserResponse.from_view(view)
@@ -137,8 +142,13 @@ async def delete_user(
         user_id, current_user_id=principal.user_id
     )
     await record_event(
-        session, tenant_id, action=USER_DELETE, entity_type="user",
-        entity_id=user_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=USER_DELETE,
+        entity_type="user",
+        entity_id=user_id,
+        principal=principal,
+        request=request,
         changes={"email": view.email},
     )
     return UserResponse.from_view(view)
@@ -154,8 +164,13 @@ async def restore_user(
 ) -> UserResponse:
     view = await _build_service(session, tenant_id).restore_user(user_id)
     await record_event(
-        session, tenant_id, action=USER_RESTORE, entity_type="user",
-        entity_id=user_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=USER_RESTORE,
+        entity_type="user",
+        entity_id=user_id,
+        principal=principal,
+        request=request,
     )
     return UserResponse.from_view(view)
 

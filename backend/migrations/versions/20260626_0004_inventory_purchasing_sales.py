@@ -84,7 +84,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name="pk_inventory_lots"),
         sa.UniqueConstraint("tenant_id", "lot_code", name="uq_inventory_lots_tenant_id_lot_code"),
         sa.ForeignKeyConstraint(
-            ["material_id"], ["materials.id"], name="fk_inventory_lots_materials",
+            ["material_id"],
+            ["materials.id"],
+            name="fk_inventory_lots_materials",
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
@@ -99,7 +101,8 @@ def upgrade() -> None:
             "available_weight_g >= 0", name="chk_inventory_lots_available_non_negative"
         ),
         sa.CheckConstraint(
-            "declared_purity > 0 AND declared_purity <= 1", name="chk_inventory_lots_purity_fraction"
+            "declared_purity > 0 AND declared_purity <= 1",
+            name="chk_inventory_lots_purity_fraction",
         ),
     )
     op.create_index(
@@ -120,7 +123,9 @@ def upgrade() -> None:
         sa.Column("price_per_oz", sa.Numeric(precision=14, scale=2), nullable=False),
         sa.Column("location", sa.String(length=120), nullable=True),
         sa.Column("expected_delivery", sa.Date(), nullable=True),
-        sa.Column("status", sa.String(length=20), server_default="pending_approval", nullable=False),
+        sa.Column(
+            "status", sa.String(length=20), server_default="pending_approval", nullable=False
+        ),
         sa.Column("lot_id", _uuid(), nullable=True),
         sa.Column("notes", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
@@ -133,11 +138,15 @@ def upgrade() -> None:
             ["supplier_id"], ["parties.id"], name="fk_purchase_orders_parties", ondelete="RESTRICT"
         ),
         sa.ForeignKeyConstraint(
-            ["material_id"], ["materials.id"], name="fk_purchase_orders_materials",
+            ["material_id"],
+            ["materials.id"],
+            name="fk_purchase_orders_materials",
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
-            ["lot_id"], ["inventory_lots.id"], name="fk_purchase_orders_inventory_lots",
+            ["lot_id"],
+            ["inventory_lots.id"],
+            name="fk_purchase_orders_inventory_lots",
             ondelete="SET NULL",
         ),
         sa.CheckConstraint(
@@ -168,7 +177,9 @@ def upgrade() -> None:
             ["customer_id"], ["parties.id"], name="fk_sales_orders_parties", ondelete="RESTRICT"
         ),
         sa.ForeignKeyConstraint(
-            ["lot_id"], ["inventory_lots.id"], name="fk_sales_orders_inventory_lots",
+            ["lot_id"],
+            ["inventory_lots.id"],
+            name="fk_sales_orders_inventory_lots",
             ondelete="RESTRICT",
         ),
         sa.CheckConstraint(

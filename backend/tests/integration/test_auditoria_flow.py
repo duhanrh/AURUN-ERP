@@ -90,9 +90,7 @@ async def test_critical_operations_are_audited(client: AsyncClient) -> None:
         },
     )
     # Cambio de marca y de módulo.
-    await client.put(
-        "/api/v1/configuration/branding", headers=auth, json={"brand_name": "Marca X"}
-    )
+    await client.put("/api/v1/configuration/branding", headers=auth, json={"brand_name": "Marca X"})
     await client.put(
         "/api/v1/configuration/modules/reportes", headers=auth, json={"is_active": False}
     )

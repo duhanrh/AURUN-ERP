@@ -143,18 +143,14 @@ async def test_report_export_xlsx_and_pdf(client: AsyncClient) -> None:
     auth = await _admin_auth(client, tenant)
 
     # Excel real: cabecera ZIP "PK" y content-type de xlsx; nombre con .xlsx.
-    xlsx = await client.get(
-        "/api/v1/reports/operational_kpis/export?format=xlsx", headers=auth
-    )
+    xlsx = await client.get("/api/v1/reports/operational_kpis/export?format=xlsx", headers=auth)
     assert xlsx.status_code == 200, xlsx.text
     assert "spreadsheetml" in xlsx.headers["content-type"]
     assert xlsx.headers["content-disposition"].endswith('.xlsx"')
     assert xlsx.content[:2] == b"PK"
 
     # PDF real: cabecera "%PDF" y content-type application/pdf.
-    pdf = await client.get(
-        "/api/v1/reports/operational_kpis/export?format=pdf", headers=auth
-    )
+    pdf = await client.get("/api/v1/reports/operational_kpis/export?format=pdf", headers=auth)
     assert pdf.status_code == 200, pdf.text
     assert pdf.headers["content-type"] == "application/pdf"
     assert pdf.headers["content-disposition"].endswith('.pdf"')

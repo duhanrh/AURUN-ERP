@@ -72,16 +72,22 @@ def upgrade() -> None:
             "tenant_id", "order_code", name="uq_transformation_orders_tenant_id_order_code"
         ),
         sa.ForeignKeyConstraint(
-            ["input_lot_id"], ["inventory_lots.id"],
-            name="fk_transformation_orders_inventory_lots", ondelete="RESTRICT",
+            ["input_lot_id"],
+            ["inventory_lots.id"],
+            name="fk_transformation_orders_inventory_lots",
+            ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
-            ["output_material_id"], ["materials.id"],
-            name="fk_transformation_orders_materials", ondelete="RESTRICT",
+            ["output_material_id"],
+            ["materials.id"],
+            name="fk_transformation_orders_materials",
+            ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
-            ["output_lot_id"], ["inventory_lots.id"],
-            name="fk_transformation_orders_inventory_lots_output", ondelete="SET NULL",
+            ["output_lot_id"],
+            ["inventory_lots.id"],
+            name="fk_transformation_orders_inventory_lots_output",
+            ondelete="SET NULL",
         ),
         sa.CheckConstraint(
             "stage IN ('reception', 'analysis', 'melting', 'refining', 'certified')",
@@ -92,7 +98,8 @@ def upgrade() -> None:
             name="chk_transformation_orders_status_valid",
         ),
         sa.CheckConstraint(
-            "process IN ('acid_refining', 'melting_alloy', 'rolling', 'granulation', 'purification')",
+            "process IN ('acid_refining', 'melting_alloy', 'rolling', "
+            "'granulation', 'purification')",
             name="chk_transformation_orders_process_valid",
         ),
         sa.CheckConstraint(
@@ -127,7 +134,9 @@ def upgrade() -> None:
             "tenant_id", "sample_code", name="uq_quality_samples_tenant_id_sample_code"
         ),
         sa.ForeignKeyConstraint(
-            ["lot_id"], ["inventory_lots.id"], name="fk_quality_samples_inventory_lots",
+            ["lot_id"],
+            ["inventory_lots.id"],
+            name="fk_quality_samples_inventory_lots",
             ondelete="RESTRICT",
         ),
         sa.CheckConstraint(

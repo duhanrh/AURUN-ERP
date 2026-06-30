@@ -53,10 +53,16 @@ def upgrade() -> None:
         sa.Column("tenant_id", _uuid(), nullable=False),
         sa.Column("base_currency", sa.String(length=8), server_default="USD", nullable=False),
         sa.Column("weight_unit", sa.String(length=4), server_default="g", nullable=False),
-        sa.Column("min_stock_g", sa.Numeric(precision=16, scale=4), server_default="1000", nullable=False),
-        sa.Column("min_margin_pct", sa.Numeric(precision=6, scale=2), server_default="5", nullable=False),
+        sa.Column(
+            "min_stock_g", sa.Numeric(precision=16, scale=4), server_default="1000", nullable=False
+        ),
+        sa.Column(
+            "min_margin_pct", sa.Numeric(precision=6, scale=2), server_default="5", nullable=False
+        ),
         sa.Column("language", sa.String(length=8), server_default="es", nullable=False),
-        sa.Column("timezone", sa.String(length=48), server_default="America/Bogota", nullable=False),
+        sa.Column(
+            "timezone", sa.String(length=48), server_default="America/Bogota", nullable=False
+        ),
         sa.Column("date_format", sa.String(length=16), server_default="YYYY-MM-DD", nullable=False),
         sa.Column("regulatory_entity", sa.String(length=120), server_default="", nullable=False),
         sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),

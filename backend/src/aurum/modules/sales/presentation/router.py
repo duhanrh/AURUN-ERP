@@ -121,8 +121,13 @@ async def update_order(
 ) -> SalesOrderResponse:
     view = await _service(session, tenant_id).update_order(order_id, payload.to_patch())
     await record_event(
-        session, tenant_id, action=SALES_ORDER_UPDATE, entity_type="sales_order",
-        entity_id=order_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=SALES_ORDER_UPDATE,
+        entity_type="sales_order",
+        entity_id=order_id,
+        principal=principal,
+        request=request,
         changes=payload.model_dump(exclude_unset=True, mode="json"),
     )
     return SalesOrderResponse.from_view(view)
@@ -138,8 +143,13 @@ async def delete_order(
 ) -> SalesOrderResponse:
     view = await _service(session, tenant_id).delete_order(order_id)
     await record_event(
-        session, tenant_id, action=SALES_ORDER_DELETE, entity_type="sales_order",
-        entity_id=order_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=SALES_ORDER_DELETE,
+        entity_type="sales_order",
+        entity_id=order_id,
+        principal=principal,
+        request=request,
         changes={"order_code": view.order_code},
     )
     return SalesOrderResponse.from_view(view)
@@ -155,7 +165,12 @@ async def restore_order(
 ) -> SalesOrderResponse:
     view = await _service(session, tenant_id).restore_order(order_id)
     await record_event(
-        session, tenant_id, action=SALES_ORDER_RESTORE, entity_type="sales_order",
-        entity_id=order_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=SALES_ORDER_RESTORE,
+        entity_type="sales_order",
+        entity_id=order_id,
+        principal=principal,
+        request=request,
     )
     return SalesOrderResponse.from_view(view)

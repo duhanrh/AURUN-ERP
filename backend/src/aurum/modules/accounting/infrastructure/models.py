@@ -56,9 +56,7 @@ class ChartAccount(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class JournalEntry(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "journal_entries"
     __table_args__ = (
-        UniqueConstraint(
-            "tenant_id", "entry_code", name="uq_journal_entries_tenant_id_entry_code"
-        ),
+        UniqueConstraint("tenant_id", "entry_code", name="uq_journal_entries_tenant_id_entry_code"),
         CheckConstraint(f"source_type IN ({_SOURCES_SQL})", name="source_type_valid"),
     )
 
@@ -81,9 +79,7 @@ class LedgerEntry(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "ledger_entries"
     __table_args__ = (
         CheckConstraint("debit >= 0 AND credit >= 0", name="amounts_non_negative"),
-        CheckConstraint(
-            "NOT (debit > 0 AND credit > 0)", name="not_both_debit_and_credit"
-        ),
+        CheckConstraint("NOT (debit > 0 AND credit > 0)", name="not_both_debit_and_credit"),
     )
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)

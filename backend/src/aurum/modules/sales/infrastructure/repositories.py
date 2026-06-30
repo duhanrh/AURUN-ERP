@@ -21,9 +21,7 @@ class SqlAlchemySalesOrderRepository:
         result = await self._session.execute(stmt.order_by(SalesOrder.created_at.desc()))
         return list(result.scalars().all())
 
-    async def get(
-        self, order_id: uuid.UUID, *, include_deleted: bool = False
-    ) -> SalesOrder | None:
+    async def get(self, order_id: uuid.UUID, *, include_deleted: bool = False) -> SalesOrder | None:
         stmt = select(SalesOrder).where(SalesOrder.id == order_id)
         if not include_deleted:
             stmt = stmt.where(SalesOrder.deleted_at.is_(None))

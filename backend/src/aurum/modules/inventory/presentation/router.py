@@ -86,8 +86,13 @@ async def create_material(
 ) -> MaterialResponse:
     view = await _service(session, tenant_id).create_material(payload.to_dto())
     await record_event(
-        session, tenant_id, action=MATERIAL_CREATE, entity_type="material",
-        entity_id=view.id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=MATERIAL_CREATE,
+        entity_type="material",
+        entity_id=view.id,
+        principal=principal,
+        request=request,
         changes={"code": view.code, "name": view.name},
     )
     return MaterialResponse.from_view(view)
@@ -104,8 +109,13 @@ async def update_material(
 ) -> MaterialResponse:
     view = await _service(session, tenant_id).update_material(material_id, payload.to_patch())
     await record_event(
-        session, tenant_id, action=MATERIAL_UPDATE, entity_type="material",
-        entity_id=material_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=MATERIAL_UPDATE,
+        entity_type="material",
+        entity_id=material_id,
+        principal=principal,
+        request=request,
         changes=payload.model_dump(exclude_unset=True),
     )
     return MaterialResponse.from_view(view)
@@ -121,8 +131,13 @@ async def delete_material(
 ) -> MaterialResponse:
     view = await _service(session, tenant_id).delete_material(material_id)
     await record_event(
-        session, tenant_id, action=MATERIAL_DELETE, entity_type="material",
-        entity_id=material_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=MATERIAL_DELETE,
+        entity_type="material",
+        entity_id=material_id,
+        principal=principal,
+        request=request,
         changes={"code": view.code},
     )
     return MaterialResponse.from_view(view)
@@ -140,8 +155,13 @@ async def restore_material(
 ) -> MaterialResponse:
     view = await _service(session, tenant_id).restore_material(material_id)
     await record_event(
-        session, tenant_id, action=MATERIAL_RESTORE, entity_type="material",
-        entity_id=material_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=MATERIAL_RESTORE,
+        entity_type="material",
+        entity_id=material_id,
+        principal=principal,
+        request=request,
     )
     return MaterialResponse.from_view(view)
 
@@ -199,8 +219,13 @@ async def update_lot(
 ) -> LotResponse:
     view = await _service(session, tenant_id).update_lot(lot_id, payload.to_patch())
     await record_event(
-        session, tenant_id, action=LOT_UPDATE, entity_type="inventory_lot",
-        entity_id=lot_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=LOT_UPDATE,
+        entity_type="inventory_lot",
+        entity_id=lot_id,
+        principal=principal,
+        request=request,
         changes=payload.model_dump(exclude_unset=True, mode="json"),
     )
     return LotResponse.from_view(view)
@@ -216,8 +241,13 @@ async def delete_lot(
 ) -> LotResponse:
     view = await _service(session, tenant_id).delete_lot(lot_id)
     await record_event(
-        session, tenant_id, action=LOT_DELETE, entity_type="inventory_lot",
-        entity_id=lot_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=LOT_DELETE,
+        entity_type="inventory_lot",
+        entity_id=lot_id,
+        principal=principal,
+        request=request,
         changes={"lot_code": view.lot_code},
     )
     return LotResponse.from_view(view)
@@ -233,7 +263,12 @@ async def restore_lot(
 ) -> LotResponse:
     view = await _service(session, tenant_id).undelete_lot(lot_id)
     await record_event(
-        session, tenant_id, action=LOT_RESTORE, entity_type="inventory_lot",
-        entity_id=lot_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=LOT_RESTORE,
+        entity_type="inventory_lot",
+        entity_id=lot_id,
+        principal=principal,
+        request=request,
     )
     return LotResponse.from_view(view)

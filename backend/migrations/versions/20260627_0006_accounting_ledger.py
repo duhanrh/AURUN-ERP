@@ -108,12 +108,16 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.PrimaryKeyConstraint("id", name="pk_ledger_entries"),
         sa.ForeignKeyConstraint(
-            ["journal_entry_id"], ["journal_entries.id"],
-            name="fk_ledger_entries_journal_entries", ondelete="CASCADE",
+            ["journal_entry_id"],
+            ["journal_entries.id"],
+            name="fk_ledger_entries_journal_entries",
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["account_id"], ["chart_of_accounts.id"],
-            name="fk_ledger_entries_chart_of_accounts", ondelete="RESTRICT",
+            ["account_id"],
+            ["chart_of_accounts.id"],
+            name="fk_ledger_entries_chart_of_accounts",
+            ondelete="RESTRICT",
         ),
         sa.CheckConstraint(
             "debit >= 0 AND credit >= 0", name="chk_ledger_entries_amounts_non_negative"

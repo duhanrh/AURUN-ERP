@@ -265,16 +265,12 @@ async def test_advance_walks_the_pipeline_stages(client: AsyncClient) -> None:
     order_id = order.json()["id"]
 
     for expected in ("analysis", "melting", "refining", "certified"):
-        resp = await client.post(
-            f"/api/v1/transformation/orders/{order_id}/advance", headers=auth
-        )
+        resp = await client.post(f"/api/v1/transformation/orders/{order_id}/advance", headers=auth)
         assert resp.status_code == 200, resp.text
         assert resp.json()["stage"] == expected
 
     # En la última etapa no se puede avanzar más.
-    overshoot = await client.post(
-        f"/api/v1/transformation/orders/{order_id}/advance", headers=auth
-    )
+    overshoot = await client.post(f"/api/v1/transformation/orders/{order_id}/advance", headers=auth)
     assert overshoot.status_code == 409
 
 

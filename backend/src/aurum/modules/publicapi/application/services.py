@@ -96,6 +96,4 @@ async def authenticate_api_key(
     if required_scope not in key.scopes:
         raise MissingScopeError(f"La API Key no tiene el scope '{required_scope}'.")
     key.last_used_at = datetime.now(UTC).replace(tzinfo=None)
-    return ApiKeyContext(
-        tenant_id=key.tenant_id, prefix=key.prefix, scopes=frozenset(key.scopes)
-    )
+    return ApiKeyContext(tenant_id=key.tenant_id, prefix=key.prefix, scopes=frozenset(key.scopes))

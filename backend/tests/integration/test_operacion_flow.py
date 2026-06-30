@@ -160,9 +160,7 @@ async def test_approving_purchase_order_creates_lot(client: AsyncClient) -> None
     lots_before = await client.get("/api/v1/inventory/lots", headers=auth)
     assert len(lots_before.json()) == 0
 
-    approved = await client.post(
-        f"/api/v1/purchasing/orders/{order['id']}/approve", headers=auth
-    )
+    approved = await client.post(f"/api/v1/purchasing/orders/{order['id']}/approve", headers=auth)
     assert approved.status_code == 200, approved.text
     assert approved.json()["status"] == "approved"
     lot_id = approved.json()["lot_id"]

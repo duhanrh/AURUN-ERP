@@ -68,9 +68,7 @@ PERM_INVENTORY_MANAGE = PermissionDef(
 PERM_PURCHASING_MANAGE = PermissionDef(
     "purchasing:manage", "purchasing", "manage", "Crear órdenes de compra"
 )
-PERM_SALES_MANAGE = PermissionDef(
-    "sales:manage", "sales", "manage", "Crear órdenes de venta"
-)
+PERM_SALES_MANAGE = PermissionDef("sales:manage", "sales", "manage", "Crear órdenes de venta")
 PERM_TRANSFORMATION_MANAGE = PermissionDef(
     "transformation:manage", "transformation", "manage", "Gestionar órdenes de transformación"
 )

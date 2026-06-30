@@ -33,9 +33,7 @@ _FORMS_SQL = ", ".join(f"'{f}'" for f in LOT_FORMS)
 class PurchaseOrder(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "purchase_orders"
     __table_args__ = (
-        UniqueConstraint(
-            "tenant_id", "order_code", name="uq_purchase_orders_tenant_id_order_code"
-        ),
+        UniqueConstraint("tenant_id", "order_code", name="uq_purchase_orders_tenant_id_order_code"),
         CheckConstraint(f"status IN ({_STATUSES_SQL})", name="status_valid"),
         CheckConstraint(f"form IN ({_FORMS_SQL})", name="form_valid"),
         CheckConstraint("quantity_g > 0", name="quantity_positive"),

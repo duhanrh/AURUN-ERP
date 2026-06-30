@@ -21,9 +21,7 @@ class SqlAlchemyRefreshTokenRepository:
         return token
 
     async def get_by_jti(self, jti: str) -> RefreshToken | None:
-        result = await self._session.execute(
-            select(RefreshToken).where(RefreshToken.jti == jti)
-        )
+        result = await self._session.execute(select(RefreshToken).where(RefreshToken.jti == jti))
         return result.scalar_one_or_none()
 
     async def revoke_all_for_user(self, user_id: uuid.UUID) -> None:

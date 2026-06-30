@@ -45,9 +45,7 @@ class SqlAlchemyUserRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_id(
-        self, user_id: uuid.UUID, *, include_deleted: bool = False
-    ) -> User | None:
+    async def get_by_id(self, user_id: uuid.UUID, *, include_deleted: bool = False) -> User | None:
         stmt = select(User).where(User.id == user_id)
         if not include_deleted:
             stmt = stmt.where(User.deleted_at.is_(None))
@@ -57,9 +55,7 @@ class SqlAlchemyUserRepository:
     async def get_by_email(self, email: str) -> User | None:
         # Un usuario eliminado no puede autenticarse ni resolverse por email.
         result = await self._session.execute(
-            select(User).where(
-                func.lower(User.email) == email.lower(), User.deleted_at.is_(None)
-            )
+            select(User).where(func.lower(User.email) == email.lower(), User.deleted_at.is_(None))
         )
         return result.scalar_one_or_none()
 

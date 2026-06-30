@@ -105,8 +105,13 @@ async def update_sample(
 ) -> QualitySampleResponse:
     view = await _service(session, tenant_id).update_sample(sample_id, payload.to_patch())
     await record_event(
-        session, tenant_id, action=SAMPLE_UPDATE, entity_type="quality_sample",
-        entity_id=sample_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=SAMPLE_UPDATE,
+        entity_type="quality_sample",
+        entity_id=sample_id,
+        principal=principal,
+        request=request,
         changes=payload.model_dump(exclude_unset=True, mode="json"),
     )
     return QualitySampleResponse.from_view(view)
@@ -122,8 +127,13 @@ async def delete_sample(
 ) -> QualitySampleResponse:
     view = await _service(session, tenant_id).delete_sample(sample_id)
     await record_event(
-        session, tenant_id, action=SAMPLE_DELETE, entity_type="quality_sample",
-        entity_id=sample_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=SAMPLE_DELETE,
+        entity_type="quality_sample",
+        entity_id=sample_id,
+        principal=principal,
+        request=request,
         changes={"sample_code": view.sample_code},
     )
     return QualitySampleResponse.from_view(view)
@@ -141,7 +151,12 @@ async def restore_sample(
 ) -> QualitySampleResponse:
     view = await _service(session, tenant_id).restore_sample(sample_id)
     await record_event(
-        session, tenant_id, action=SAMPLE_RESTORE, entity_type="quality_sample",
-        entity_id=sample_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=SAMPLE_RESTORE,
+        entity_type="quality_sample",
+        entity_id=sample_id,
+        principal=principal,
+        request=request,
     )
     return QualitySampleResponse.from_view(view)

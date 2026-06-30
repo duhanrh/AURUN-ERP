@@ -130,9 +130,7 @@ def upgrade() -> None:
         sa.Column("user_id", _uuid(), nullable=False),
         sa.Column("permission_id", _uuid(), nullable=False),
         sa.Column("granted", sa.Boolean(), server_default=sa.text("true"), nullable=False),
-        sa.PrimaryKeyConstraint(
-            "user_id", "permission_id", name="pk_user_permission_exceptions"
-        ),
+        sa.PrimaryKeyConstraint("user_id", "permission_id", name="pk_user_permission_exceptions"),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["users.id"],

@@ -93,7 +93,8 @@ class AccountingService:
         expense = Decimal("0")
         for code, acc in accounts.items():
             natural = _natural_amount(
-                balances.get(code, Decimal("0")), acc.normal_balance  # type: ignore[arg-type]
+                balances.get(code, Decimal("0")),
+                acc.normal_balance,  # type: ignore[arg-type]
             )
             if acc.type == "income":
                 income += natural
@@ -145,9 +146,7 @@ class AccountingService:
         equity.append(BalanceLine("3605", "Resultado del Ejercicio", result))
 
         total_assets = sum((line.amount for line in assets), Decimal("0")).quantize(CENTS)
-        total_liabilities = sum(
-            (line.amount for line in liabilities), Decimal("0")
-        ).quantize(CENTS)
+        total_liabilities = sum((line.amount for line in liabilities), Decimal("0")).quantize(CENTS)
         total_equity = sum((line.amount for line in equity), Decimal("0")).quantize(CENTS)
         return BalanceSheetView(
             assets=assets,
@@ -166,9 +165,9 @@ class AccountingService:
     async def payables(self) -> list[PartyBalanceView]:
         return await self._subledger(ACC_PAYABLE, normal="credit")
 
-    async def _subledger(self, account_code: str, *, normal: NormalBalance) -> list[
-        PartyBalanceView
-    ]:
+    async def _subledger(
+        self, account_code: str, *, normal: NormalBalance
+    ) -> list[PartyBalanceView]:
         entries = await self._journals.list_all()
         by_party: dict[uuid.UUID | None, tuple[str, Decimal]] = {}
         for entry in entries:

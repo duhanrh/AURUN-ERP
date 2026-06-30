@@ -25,9 +25,7 @@ class SqlAlchemyApiKeyRepository:
 
     async def list_for_tenant(self, tenant_id: uuid.UUID) -> list[ApiKey]:
         result = await self._session.execute(
-            select(ApiKey)
-            .where(ApiKey.tenant_id == tenant_id)
-            .order_by(ApiKey.created_at.desc())
+            select(ApiKey).where(ApiKey.tenant_id == tenant_id).order_by(ApiKey.created_at.desc())
         )
         return list(result.scalars().all())
 

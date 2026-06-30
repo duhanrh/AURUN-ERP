@@ -82,9 +82,7 @@ class TransformationService:
         self._inventory = inventory
         self._materials = materials
 
-    async def list_orders(
-        self, *, include_deleted: bool = False
-    ) -> list[TransformationOrderView]:
+    async def list_orders(self, *, include_deleted: bool = False) -> list[TransformationOrderView]:
         orders = await self._orders.list_all(include_deleted=include_deleted)
         return [_to_view(o) for o in orders]
 

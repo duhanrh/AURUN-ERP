@@ -93,9 +93,7 @@ async def test_public_api_reads_with_api_key(client: AsyncClient) -> None:
     full_key = await _create_key(client, auth, ["inventory:read"])
 
     # La API pública resuelve el tenant de la clave y devuelve sus materiales.
-    materials = await client.get(
-        "/public/v1/inventory/materials", headers={"X-API-Key": full_key}
-    )
+    materials = await client.get("/public/v1/inventory/materials", headers={"X-API-Key": full_key})
     assert materials.status_code == 200, materials.text
     codes = {m["code"] for m in materials.json()}
     assert {"AU24", "AG999"} <= codes
@@ -119,9 +117,7 @@ async def test_public_api_enforces_scopes(client: AsyncClient) -> None:
 
     # Con el scope correcto sí.
     key2 = await _create_key(client, auth, ["reports:read"])
-    ok = await client.get(
-        "/public/v1/reports/operational_kpis", headers={"X-API-Key": key2}
-    )
+    ok = await client.get("/public/v1/reports/operational_kpis", headers={"X-API-Key": key2})
     assert ok.status_code == 200, ok.text
     assert ok.json()["title"] == "KPIs Operativos"
 
@@ -148,9 +144,7 @@ async def test_invalid_and_revoked_keys_rejected(client: AsyncClient) -> None:
     assert revoke.status_code == 200
     assert revoke.json()["is_active"] is False
 
-    after = await client.get(
-        "/public/v1/inventory/materials", headers={"X-API-Key": full_key}
-    )
+    after = await client.get("/public/v1/inventory/materials", headers={"X-API-Key": full_key})
     assert after.status_code == 401
 
 

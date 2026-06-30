@@ -180,13 +180,9 @@ class UserService:
 
     async def _guard_last_superuser(self, *, exclude_id: uuid.UUID) -> None:
         if await self._users.count_active_superusers(exclude_id=exclude_id) == 0:
-            raise LastSuperuserError(
-                "No se puede dejar el tenant sin un superusuario activo."
-            )
+            raise LastSuperuserError("No se puede dejar el tenant sin un superusuario activo.")
 
-    async def _add_exceptions(
-        self, user: User, codes: tuple[str, ...], *, granted: bool
-    ) -> None:
+    async def _add_exceptions(self, user: User, codes: tuple[str, ...], *, granted: bool) -> None:
         for code in codes:
             permission = await self._permissions.get_by_code(code)
             if permission is None:

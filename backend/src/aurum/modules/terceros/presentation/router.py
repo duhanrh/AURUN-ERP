@@ -108,15 +108,18 @@ def build_parties_router(
     ) -> PartyResponse:
         view = await _service(session, tenant_id, kind).delete(party_id)
         await record_event(
-            session, tenant_id, action=PARTY_DELETE, entity_type=kind,
-            entity_id=party_id, principal=principal, request=request,
+            session,
+            tenant_id,
+            action=PARTY_DELETE,
+            entity_type=kind,
+            entity_id=party_id,
+            principal=principal,
+            request=request,
             changes={"legal_name": view.legal_name},
         )
         return PartyResponse.from_view(view)
 
-    @router.post(
-        "/{party_id}/restore", response_model=PartyResponse, dependencies=[write_guard]
-    )
+    @router.post("/{party_id}/restore", response_model=PartyResponse, dependencies=[write_guard])
     async def restore_party(
         party_id: uuid.UUID,
         request: Request,
@@ -126,8 +129,13 @@ def build_parties_router(
     ) -> PartyResponse:
         view = await _service(session, tenant_id, kind).restore(party_id)
         await record_event(
-            session, tenant_id, action=PARTY_RESTORE, entity_type=kind,
-            entity_id=party_id, principal=principal, request=request,
+            session,
+            tenant_id,
+            action=PARTY_RESTORE,
+            entity_type=kind,
+            entity_id=party_id,
+            principal=principal,
+            request=request,
         )
         return PartyResponse.from_view(view)
 

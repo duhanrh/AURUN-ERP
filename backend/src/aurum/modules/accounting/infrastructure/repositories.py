@@ -15,15 +15,11 @@ class SqlAlchemyAccountRepository:
         self._session = session
 
     async def list_all(self) -> list[ChartAccount]:
-        result = await self._session.execute(
-            select(ChartAccount).order_by(ChartAccount.code)
-        )
+        result = await self._session.execute(select(ChartAccount).order_by(ChartAccount.code))
         return list(result.scalars().all())
 
     async def get_by_code(self, code: str) -> ChartAccount | None:
-        result = await self._session.execute(
-            select(ChartAccount).where(ChartAccount.code == code)
-        )
+        result = await self._session.execute(select(ChartAccount).where(ChartAccount.code == code))
         return result.scalar_one_or_none()
 
 

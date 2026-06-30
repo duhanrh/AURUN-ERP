@@ -107,9 +107,7 @@ def to_xlsx(doc: ExportDoc) -> bytes:
 
     # Ancho aproximado por contenido.
     for col_idx, name in enumerate(doc.columns, start=1):
-        width = max(
-            len(name), *(len(r[col_idx - 1]) for r in doc.rows if col_idx - 1 < len(r)), 8
-        )
+        width = max(len(name), *(len(r[col_idx - 1]) for r in doc.rows if col_idx - 1 < len(r)), 8)
         ws.column_dimensions[get_column_letter(col_idx)].width = min(width + 2, 48)
     ws.cell(row=start, column=1).alignment = Alignment(horizontal="left")
 
@@ -148,9 +146,7 @@ def to_pdf(doc: ExportDoc) -> bytes:
     pdf.cell(
         0,
         5,
-        _pdf_safe(
-            f"{doc.document_number}  ·  {doc.generated_at.isoformat(timespec='seconds')}"
-        ),
+        _pdf_safe(f"{doc.document_number}  ·  {doc.generated_at.isoformat(timespec='seconds')}"),
         new_x="LMARGIN",
         new_y="NEXT",
     )

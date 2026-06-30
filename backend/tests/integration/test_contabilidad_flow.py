@@ -151,9 +151,7 @@ async def test_purchase_approval_posts_balanced_entry(client: AsyncClient) -> No
     # Antes de aprobar no hay asientos.
     assert (await client.get("/api/v1/accounting/journal", headers=auth)).json() == []
 
-    approved = await client.post(
-        f"/api/v1/purchasing/orders/{order['id']}/approve", headers=auth
-    )
+    approved = await client.post(f"/api/v1/purchasing/orders/{order['id']}/approve", headers=auth)
     assert approved.status_code == 200, approved.text
 
     journal = (await client.get("/api/v1/accounting/journal", headers=auth)).json()

@@ -51,9 +51,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.PrimaryKeyConstraint("id", name="pk_parties"),
-        sa.UniqueConstraint(
-            "tenant_id", "kind", "tax_id", name="uq_parties_tenant_id_kind_tax_id"
-        ),
+        sa.UniqueConstraint("tenant_id", "kind", "tax_id", name="uq_parties_tenant_id_kind_tax_id"),
         sa.CheckConstraint("kind IN ('customer', 'supplier')", name="chk_parties_kind_valid"),
         sa.CheckConstraint(
             "status IN ('active', 'evaluation', 'inactive')", name="chk_parties_status_valid"

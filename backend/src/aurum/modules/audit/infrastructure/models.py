@@ -22,9 +22,7 @@ from aurum.shared.infrastructure.base import Base, UUIDPrimaryKeyMixin
 
 class AuditLog(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "audit_logs"
-    __table_args__ = (
-        Index("idx_audit_logs_tenant_created", "tenant_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_audit_logs_tenant_created", "tenant_id", "created_at"),)
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)

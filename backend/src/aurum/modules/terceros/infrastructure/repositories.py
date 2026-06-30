@@ -20,9 +20,7 @@ class SqlAlchemyPartyRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def list_by_kind(
-        self, kind: PartyKind, *, include_deleted: bool = False
-    ) -> list[Party]:
+    async def list_by_kind(self, kind: PartyKind, *, include_deleted: bool = False) -> list[Party]:
         stmt = select(Party).where(Party.kind == kind)
         if not include_deleted:
             stmt = stmt.where(Party.deleted_at.is_(None))

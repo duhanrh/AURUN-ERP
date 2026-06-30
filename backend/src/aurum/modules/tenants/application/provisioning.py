@@ -177,4 +177,3 @@ class ProvisioningService:
             self._session.add(
                 TenantModuleConfig(tenant_id=tenant_id, module_key=module.key, is_active=True)
             )
-

@@ -44,9 +44,7 @@ router = APIRouter(prefix="/public/v1", tags=["public-api"])
 _InventoryCtx = Annotated[
     tuple[AsyncSession, ApiKeyContext], Depends(public_session("inventory:read"))
 ]
-_ReportsCtx = Annotated[
-    tuple[AsyncSession, ApiKeyContext], Depends(public_session("reports:read"))
-]
+_ReportsCtx = Annotated[tuple[AsyncSession, ApiKeyContext], Depends(public_session("reports:read"))]
 
 
 @router.get("/inventory/materials", response_model=list[MaterialResponse])

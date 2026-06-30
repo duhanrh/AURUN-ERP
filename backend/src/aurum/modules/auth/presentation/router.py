@@ -34,6 +34,7 @@ class TooManyAttemptsError(DomainError):
     status_code = 429
     error_code = "too_many_attempts"
 
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 

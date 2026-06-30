@@ -72,9 +72,7 @@ class SqlAlchemyLotRepository:
         result = await self._session.execute(stmt.order_by(InventoryLot.created_at.desc()))
         return list(result.scalars().all())
 
-    async def get(
-        self, lot_id: uuid.UUID, *, include_deleted: bool = False
-    ) -> InventoryLot | None:
+    async def get(self, lot_id: uuid.UUID, *, include_deleted: bool = False) -> InventoryLot | None:
         stmt = select(InventoryLot).where(InventoryLot.id == lot_id)
         if not include_deleted:
             stmt = stmt.where(InventoryLot.deleted_at.is_(None))
@@ -92,8 +90,6 @@ class SqlAlchemyLotRepository:
 
     async def exists_code(self, lot_code: str) -> bool:
         result = await self._session.execute(
-            select(func.count())
-            .select_from(InventoryLot)
-            .where(InventoryLot.lot_code == lot_code)
+            select(func.count()).select_from(InventoryLot).where(InventoryLot.lot_code == lot_code)
         )
         return (result.scalar() or 0) > 0

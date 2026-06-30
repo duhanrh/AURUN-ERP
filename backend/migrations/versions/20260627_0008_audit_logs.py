@@ -42,9 +42,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.PrimaryKeyConstraint("id", name="pk_audit_logs"),
     )
-    op.create_index(
-        "idx_audit_logs_tenant_created", "audit_logs", ["tenant_id", "created_at"]
-    )
+    op.create_index("idx_audit_logs_tenant_created", "audit_logs", ["tenant_id", "created_at"])
 
     op.execute("ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY")
     op.execute("ALTER TABLE audit_logs FORCE ROW LEVEL SECURITY")

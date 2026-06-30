@@ -37,9 +37,7 @@ _manual = Depends(require_permission("accounting:manual_entry"))
 _treasury = Depends(require_permission("treasury:manage"))
 
 
-def build_accounting_service(
-    session: AsyncSession, tenant_id: uuid.UUID
-) -> AccountingService:
+def build_accounting_service(session: AsyncSession, tenant_id: uuid.UUID) -> AccountingService:
     """Factory reutilizado por Compras y Ventas para postear asientos automáticos."""
     return AccountingService(
         tenant_id=tenant_id,
@@ -116,12 +114,15 @@ async def create_manual_entry(
     tenant_id: uuid.UUID = Depends(require_tenant_id),
     principal: Principal = _manual,
 ) -> JournalEntryResponse:
-    view = await build_accounting_service(session, tenant_id).create_manual_entry(
-        payload.to_dto()
-    )
+    view = await build_accounting_service(session, tenant_id).create_manual_entry(payload.to_dto())
     await record_event(
-        session, tenant_id, action=ACCOUNTING_MANUAL_ENTRY, entity_type="journal_entry",
-        entity_id=view.id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=ACCOUNTING_MANUAL_ENTRY,
+        entity_type="journal_entry",
+        entity_id=view.id,
+        principal=principal,
+        request=request,
         changes={"entry_code": view.entry_code, "memo": view.memo},
     )
     return JournalEntryResponse.from_view(view)
@@ -138,7 +139,5 @@ async def register_payment(
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID = Depends(require_tenant_id),
 ) -> JournalEntryResponse:
-    view = await build_accounting_service(session, tenant_id).register_payment(
-        payload.to_dto()
-    )
+    view = await build_accounting_service(session, tenant_id).register_payment(payload.to_dto())
     return JournalEntryResponse.from_view(view)

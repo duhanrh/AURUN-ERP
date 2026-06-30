@@ -15,9 +15,7 @@ Stage = Literal["reception", "analysis", "melting", "refining", "certified"]
 
 TransformationStatus = Literal["in_progress", "completed", "cancelled"]
 
-Process = Literal[
-    "acid_refining", "melting_alloy", "rolling", "granulation", "purification"
-]
+Process = Literal["acid_refining", "melting_alloy", "rolling", "granulation", "purification"]
 """Procesos de transformación (sección 9 de la maqueta)."""
 
 # Orden canónico del pipeline; ``advance`` avanza al siguiente.

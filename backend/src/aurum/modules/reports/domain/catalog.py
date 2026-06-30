@@ -40,12 +40,8 @@ REPORT_CATALOG: tuple[ReportDef, ...] = (
     ReportDef(
         "lot_traceability", "Trazabilidad de Lotes", "Origen, estado y proveedor de cada lote."
     ),
-    ReportDef(
-        "regulatory", "Informe Regulatorio", "Resumen por material para el ente regulador."
-    ),
-    ReportDef(
-        "operational_kpis", "KPIs Operativos", "Indicadores clave de operación del tenant."
-    ),
+    ReportDef("regulatory", "Informe Regulatorio", "Resumen por material para el ente regulador."),
+    ReportDef("operational_kpis", "KPIs Operativos", "Indicadores clave de operación del tenant."),
     ReportDef(
         "price_analysis",
         "Análisis de Precios",

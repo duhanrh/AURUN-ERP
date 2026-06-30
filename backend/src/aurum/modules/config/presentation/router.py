@@ -70,8 +70,12 @@ async def update_branding(
 ) -> BrandingResponse:
     view = await _service(session).update_branding(payload.to_dto())
     await record_event(
-        session, tenant_id, action=CONFIG_BRANDING_UPDATE, entity_type="branding",
-        principal=principal, request=request,
+        session,
+        tenant_id,
+        action=CONFIG_BRANDING_UPDATE,
+        entity_type="branding",
+        principal=principal,
+        request=request,
         changes=payload.model_dump(exclude_none=True),
     )
     return BrandingResponse.from_view(view)
@@ -86,8 +90,12 @@ async def reset_branding(
 ) -> BrandingResponse:
     view = await _service(session).reset_branding()
     await record_event(
-        session, tenant_id, action=CONFIG_BRANDING_RESET, entity_type="branding",
-        principal=principal, request=request,
+        session,
+        tenant_id,
+        action=CONFIG_BRANDING_RESET,
+        entity_type="branding",
+        principal=principal,
+        request=request,
     )
     return BrandingResponse.from_view(view)
 
@@ -108,8 +116,13 @@ async def update_parameters(
 ) -> ParametersResponse:
     view = await _service(session).update_parameters(payload.to_dto())
     await record_event(
-        session, tenant_id, action=CONFIG_PARAMETERS_UPDATE, entity_type="parameters",
-        principal=principal, request=request, changes=payload.model_dump(mode="json"),
+        session,
+        tenant_id,
+        action=CONFIG_PARAMETERS_UPDATE,
+        entity_type="parameters",
+        principal=principal,
+        request=request,
+        changes=payload.model_dump(mode="json"),
     )
     return ParametersResponse.from_view(view)
 
@@ -135,8 +148,12 @@ async def set_module(
 ) -> ModuleResponse:
     view = await _service(session).set_module(module_key, payload.is_active)
     await record_event(
-        session, tenant_id, action=CONFIG_MODULE_TOGGLE, entity_type="module",
-        principal=principal, request=request,
+        session,
+        tenant_id,
+        action=CONFIG_MODULE_TOGGLE,
+        entity_type="module",
+        principal=principal,
+        request=request,
         changes={"module_key": module_key, "is_active": payload.is_active},
     )
     return ModuleResponse.from_view(view)

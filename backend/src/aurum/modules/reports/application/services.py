@@ -139,9 +139,7 @@ class ReportsService:
             ["Costos y gastos", _money(kpis.total_expense)],
             ["Utilidad neta", _money(kpis.net_income)],
         ]
-        margin = (
-            (kpis.net_income / kpis.total_income * 100) if kpis.total_income > 0 else ZERO
-        )
+        margin = (kpis.net_income / kpis.total_income * 100) if kpis.total_income > 0 else ZERO
         summary = [
             SummaryItem("Utilidad neta", _money(kpis.net_income)),
             SummaryItem("Margen neto", _pct(margin)),

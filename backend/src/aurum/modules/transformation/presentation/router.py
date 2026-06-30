@@ -80,8 +80,13 @@ async def update_order(
 ) -> TransformationOrderResponse:
     view = await _service(session, tenant_id).update_order(order_id, payload.to_patch())
     await record_event(
-        session, tenant_id, action=TRANSFORMATION_UPDATE, entity_type="transformation_order",
-        entity_id=order_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=TRANSFORMATION_UPDATE,
+        entity_type="transformation_order",
+        entity_id=order_id,
+        principal=principal,
+        request=request,
         changes=payload.model_dump(exclude_unset=True, mode="json"),
     )
     return TransformationOrderResponse.from_view(view)
@@ -99,8 +104,13 @@ async def delete_order(
 ) -> TransformationOrderResponse:
     view = await _service(session, tenant_id).delete_order(order_id)
     await record_event(
-        session, tenant_id, action=TRANSFORMATION_DELETE, entity_type="transformation_order",
-        entity_id=order_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=TRANSFORMATION_DELETE,
+        entity_type="transformation_order",
+        entity_id=order_id,
+        principal=principal,
+        request=request,
         changes={"order_code": view.order_code},
     )
     return TransformationOrderResponse.from_view(view)
@@ -120,8 +130,13 @@ async def restore_order(
 ) -> TransformationOrderResponse:
     view = await _service(session, tenant_id).restore_order(order_id)
     await record_event(
-        session, tenant_id, action=TRANSFORMATION_RESTORE, entity_type="transformation_order",
-        entity_id=order_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=TRANSFORMATION_RESTORE,
+        entity_type="transformation_order",
+        entity_id=order_id,
+        principal=principal,
+        request=request,
     )
     return TransformationOrderResponse.from_view(view)
 
@@ -134,9 +149,7 @@ async def transformation_kpis(
     return TransformationKpisResponse.from_view(await _service(session, tenant_id).kpis())
 
 
-@router.get(
-    "/orders/{order_id}", response_model=TransformationOrderResponse, dependencies=[_read]
-)
+@router.get("/orders/{order_id}", response_model=TransformationOrderResponse, dependencies=[_read])
 async def get_order(
     order_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),

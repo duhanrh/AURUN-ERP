@@ -84,8 +84,13 @@ async def update_order(
 ) -> PurchaseOrderResponse:
     view = await _service(session, tenant_id).update_order(order_id, payload.to_patch())
     await record_event(
-        session, tenant_id, action=PURCHASE_ORDER_UPDATE, entity_type="purchase_order",
-        entity_id=order_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=PURCHASE_ORDER_UPDATE,
+        entity_type="purchase_order",
+        entity_id=order_id,
+        principal=principal,
+        request=request,
         changes=payload.model_dump(exclude_unset=True, mode="json"),
     )
     return PurchaseOrderResponse.from_view(view)
@@ -101,8 +106,13 @@ async def delete_order(
 ) -> PurchaseOrderResponse:
     view = await _service(session, tenant_id).delete_order(order_id)
     await record_event(
-        session, tenant_id, action=PURCHASE_ORDER_DELETE, entity_type="purchase_order",
-        entity_id=order_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=PURCHASE_ORDER_DELETE,
+        entity_type="purchase_order",
+        entity_id=order_id,
+        principal=principal,
+        request=request,
         changes={"order_code": view.order_code},
     )
     return PurchaseOrderResponse.from_view(view)
@@ -120,8 +130,13 @@ async def restore_order(
 ) -> PurchaseOrderResponse:
     view = await _service(session, tenant_id).restore_order(order_id)
     await record_event(
-        session, tenant_id, action=PURCHASE_ORDER_RESTORE, entity_type="purchase_order",
-        entity_id=order_id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=PURCHASE_ORDER_RESTORE,
+        entity_type="purchase_order",
+        entity_id=order_id,
+        principal=principal,
+        request=request,
     )
     return PurchaseOrderResponse.from_view(view)
 
@@ -172,8 +187,13 @@ async def approve_order(
 ) -> PurchaseOrderResponse:
     view = await _service(session, tenant_id).approve_order(order_id)
     await record_event(
-        session, tenant_id, action=PURCHASE_ORDER_APPROVE, entity_type="purchase_order",
-        entity_id=view.id, principal=principal, request=request,
+        session,
+        tenant_id,
+        action=PURCHASE_ORDER_APPROVE,
+        entity_type="purchase_order",
+        entity_id=view.id,
+        principal=principal,
+        request=request,
         changes={"order_code": view.order_code, "total_usd": str(view.total_usd)},
     )
     return PurchaseOrderResponse.from_view(view)
