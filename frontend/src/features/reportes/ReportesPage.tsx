@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { useAuthStore } from '../auth/authStore';
-import { downloadReportCsv, listReports, previewReport } from './reportes.api';
+import { downloadReport, listReports, previewReport, type ExportFormat } from './reportes.api';
 import type { ReportTable } from './reportes.types';
 
 export function ReportesPage() {
@@ -20,7 +20,10 @@ export function ReportesPage() {
     queryFn: () => previewReport(selected as string),
     enabled: canRead && selected !== null,
   });
-  const download = useMutation({ mutationFn: (key: string) => downloadReportCsv(key) });
+  const download = useMutation({
+    mutationFn: ({ key, format }: { key: string; format: ExportFormat }) =>
+      downloadReport(key, format),
+  });
 
   if (!canRead) {
     return (
@@ -59,7 +62,7 @@ export function ReportesPage() {
           table={preview.data}
           loading={preview.isLoading}
           downloading={download.isPending}
-          onDownload={() => download.mutate(selected)}
+          onDownload={(format) => download.mutate({ key: selected, format })}
         />
       ) : (
         <div className="report-empty">Selecciona un reporte para ver la vista previa.</div>
@@ -77,7 +80,7 @@ function ReportPreview({
   table: ReportTable | undefined;
   loading: boolean;
   downloading: boolean;
-  onDownload: () => void;
+  onDownload: (format: ExportFormat) => void;
 }) {
   if (loading || !table) return <div className="report-preview">Generando reporte…</div>;
   return (
@@ -95,9 +98,18 @@ function ReportPreview({
 
       <div className="section-head">
         <span className="section-subtitle">{table.rows.length} fila(s)</span>
-        <button className="btn btn-sm btn-primary" disabled={downloading} onClick={onDownload}>
-          {downloading ? 'Exportando…' : 'Exportar CSV'}
-        </button>
+        <div className="row-actions">
+          <span className="field-hint">Exportar:</span>
+          <button className="btn btn-sm btn-ghost" disabled={downloading} onClick={() => onDownload('xlsx')}>
+            Excel
+          </button>
+          <button className="btn btn-sm btn-ghost" disabled={downloading} onClick={() => onDownload('pdf')}>
+            PDF
+          </button>
+          <button className="btn btn-sm btn-primary" disabled={downloading} onClick={() => onDownload('csv')}>
+            {downloading ? 'Exportando…' : 'CSV'}
+          </button>
+        </div>
       </div>
 
       <div className="table-wrap">

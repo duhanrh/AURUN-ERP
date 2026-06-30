@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aurum.modules.accounting.presentation.router import build_accounting_service
@@ -27,8 +27,8 @@ from aurum.modules.purchasing.infrastructure.repositories import (
 from aurum.modules.quality.infrastructure.repositories import (
     SqlAlchemyQualitySampleRepository,
 )
+from aurum.modules.reports.application.dto import ReportTable
 from aurum.modules.reports.application.services import ReportsService
-from aurum.modules.reports.infrastructure.export import to_csv
 from aurum.modules.reports.presentation.schemas import (
     ReportTableResponse,
     ReportTypeResponse,
@@ -38,6 +38,13 @@ from aurum.modules.transformation.infrastructure.repositories import (
     SqlAlchemyTransformationOrderRepository,
 )
 from aurum.shared.dependencies import get_session, require_tenant_id
+from aurum.shared.export import (
+    EXPORT_FORMATS,
+    ExportDoc,
+    ExportFormat,
+    ExportSummary,
+    export_response,
+)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -76,17 +83,28 @@ async def preview_report(
     return ReportTableResponse.from_view(table)
 
 
+def _to_export_doc(table: ReportTable) -> ExportDoc:
+    return ExportDoc(
+        brand_name=table.brand_name,
+        title=table.title,
+        document_number=table.document_number,
+        generated_at=table.generated_at,
+        columns=list(table.columns),
+        rows=[list(r) for r in table.rows],
+        summary=[ExportSummary(label=s.label, value=s.value) for s in table.summary],
+    )
+
+
 @router.get("/{key}/export", dependencies=[_read])
 async def export_report(
     key: str,
     session: AsyncSession = Depends(get_session),
     tenant_id: uuid.UUID = Depends(require_tenant_id),
+    fmt: ExportFormat = Query(default="csv", alias="format"),
 ) -> Response:
+    if fmt not in EXPORT_FORMATS:
+        fmt = "csv"
     table = await _service(session, tenant_id).generate(key)
-    csv_text = to_csv(table)
-    filename = f"{key}_{table.document_number}.csv"
-    return Response(
-        content=csv_text,
-        media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    return export_response(
+        _to_export_doc(table), fmt, filename_base=f"{key}_{table.document_number}"
     )

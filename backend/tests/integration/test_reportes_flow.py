@@ -138,6 +138,34 @@ async def test_report_export_returns_csv(client: AsyncClient) -> None:
     assert "Lotes en inventario" in text
 
 
+async def test_report_export_xlsx_and_pdf(client: AsyncClient) -> None:
+    tenant = await _provision(client)
+    auth = await _admin_auth(client, tenant)
+
+    # Excel real: cabecera ZIP "PK" y content-type de xlsx; nombre con .xlsx.
+    xlsx = await client.get(
+        "/api/v1/reports/operational_kpis/export?format=xlsx", headers=auth
+    )
+    assert xlsx.status_code == 200, xlsx.text
+    assert "spreadsheetml" in xlsx.headers["content-type"]
+    assert xlsx.headers["content-disposition"].endswith('.xlsx"')
+    assert xlsx.content[:2] == b"PK"
+
+    # PDF real: cabecera "%PDF" y content-type application/pdf.
+    pdf = await client.get(
+        "/api/v1/reports/operational_kpis/export?format=pdf", headers=auth
+    )
+    assert pdf.status_code == 200, pdf.text
+    assert pdf.headers["content-type"] == "application/pdf"
+    assert pdf.headers["content-disposition"].endswith('.pdf"')
+    assert pdf.content[:4] == b"%PDF"
+
+    # El análisis de precios usa "Δ%": el PDF no debe romper (se transliteró).
+    pdf2 = await client.get("/api/v1/reports/price_analysis/export?format=pdf", headers=auth)
+    assert pdf2.status_code == 200
+    assert pdf2.content[:4] == b"%PDF"
+
+
 async def test_report_header_uses_custom_brand(client: AsyncClient) -> None:
     tenant = await _provision(client)
     auth = await _admin_auth(client, tenant)
