@@ -21,6 +21,7 @@ import {
   listTransformations,
   restoreTransformation,
   transformationKpis,
+  updateTransformation,
 } from './procesos.api';
 import {
   PROCESS_LABEL,
@@ -29,7 +30,10 @@ import {
   TS_STATUS_BADGE,
   TS_STATUS_LABEL,
   type CreateTransformationInput,
+  type TransformationOrder,
+  type UpdateTransformationInput,
 } from './procesos.types';
+import { TransformationEditModal } from './TransformationEditModal';
 import { TransformationFormModal } from './TransformationFormModal';
 
 const PIPELINE_STAGES = STAGE_ORDER.map((key) => ({ key, label: STAGE_LABEL[key] }));
@@ -39,6 +43,7 @@ export function TransformationPage() {
   const canRead = useAuthStore((s) => s.hasPermission('transformation:access'));
   const canManage = useAuthStore((s) => s.hasPermission('transformation:manage'));
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<TransformationOrder | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
 
@@ -68,6 +73,14 @@ export function TransformationPage() {
   const cancelMutation = useMutation({ mutationFn: cancelTransformation, onSuccess: invalidate });
   const deleteMutation = useMutation({ mutationFn: deleteTransformation, onSuccess: invalidate });
   const restoreMutation = useMutation({ mutationFn: restoreTransformation, onSuccess: invalidate });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateTransformationInput }) =>
+      updateTransformation(id, input),
+    onSuccess: async () => {
+      await invalidate();
+      setEditing(null);
+    },
+  });
 
   if (!canRead) {
     return (
@@ -210,7 +223,11 @@ export function TransformationPage() {
                         >
                           Restaurar
                         </button>
-                      ) : o.status !== 'in_progress' ? (
+                      ) : o.status === 'in_progress' ? (
+                        <button className="btn btn-sm btn-ghost" onClick={() => setEditing(o)}>
+                          Editar
+                        </button>
+                      ) : (
                         <button
                           className="btn btn-sm btn-ghost"
                           disabled={deleteMutation.isPending}
@@ -218,7 +235,7 @@ export function TransformationPage() {
                         >
                           Eliminar
                         </button>
-                      ) : null}
+                      )}
                     </div>
                   </td>
                 ) : null}
@@ -244,6 +261,17 @@ export function TransformationPage() {
             await createMutation.mutateAsync(input);
           }}
           onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+
+      {editing ? (
+        <TransformationEditModal
+          order={editing}
+          submitting={updateMutation.isPending}
+          onSubmit={async (input) => {
+            await updateMutation.mutateAsync({ id: editing.id, input });
+          }}
+          onClose={() => setEditing(null)}
         />
       ) : null}
     </div>

@@ -16,13 +16,17 @@ import {
   listSamples,
   qualityKpis,
   restoreSample,
+  updateSample,
 } from './procesos.api';
 import {
   METHOD_LABEL,
   RESULT_BADGE,
   RESULT_LABEL,
   type CreateSampleInput,
+  type QualitySample,
+  type UpdateSampleInput,
 } from './procesos.types';
+import { SampleEditModal } from './SampleEditModal';
 import { SampleFormModal } from './SampleFormModal';
 
 export function QualityPage() {
@@ -30,6 +34,7 @@ export function QualityPage() {
   const canRead = useAuthStore((s) => s.hasPermission('quality:access'));
   const canManage = useAuthStore((s) => s.hasPermission('quality:manage'));
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<QualitySample | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
 
   const kpis = useQuery({ queryKey: ['quality', 'kpis'], queryFn: qualityKpis, enabled: canRead });
@@ -53,6 +58,13 @@ export function QualityPage() {
   });
   const deleteMutation = useMutation({ mutationFn: deleteSample, onSuccess: invalidate });
   const restoreMutation = useMutation({ mutationFn: restoreSample, onSuccess: invalidate });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateSampleInput }) => updateSample(id, input),
+    onSuccess: async () => {
+      await invalidate();
+      setEditing(null);
+    },
+  });
 
   if (!canRead) {
     return (
@@ -150,13 +162,18 @@ export function QualityPage() {
                             Restaurar
                           </button>
                         ) : (
-                          <button
-                            className="btn btn-sm btn-ghost"
-                            disabled={deleteMutation.isPending}
-                            onClick={() => deleteMutation.mutate(s.id)}
-                          >
-                            Eliminar
-                          </button>
+                          <>
+                            <button className="btn btn-sm btn-ghost" onClick={() => setEditing(s)}>
+                              Editar
+                            </button>
+                            <button
+                              className="btn btn-sm btn-ghost"
+                              disabled={deleteMutation.isPending}
+                              onClick={() => deleteMutation.mutate(s.id)}
+                            >
+                              Eliminar
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -183,6 +200,17 @@ export function QualityPage() {
             await createMutation.mutateAsync(input);
           }}
           onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+
+      {editing ? (
+        <SampleEditModal
+          sample={editing}
+          submitting={updateMutation.isPending}
+          onSubmit={async (input) => {
+            await updateMutation.mutateAsync({ id: editing.id, input });
+          }}
+          onClose={() => setEditing(null)}
         />
       ) : null}
     </div>

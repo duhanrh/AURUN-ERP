@@ -16,16 +16,25 @@ import {
   restoreSalesOrder,
   salesKpis,
   setSalesStatus,
+  updateSalesOrder,
 } from './api';
 import { grams, money } from './format';
+import { SalesOrderEditModal } from './SalesOrderEditModal';
 import { SalesOrderFormModal } from './SalesOrderFormModal';
-import { SO_STATUS_BADGE, SO_STATUS_LABEL, type CreateSalesOrderInput } from './types';
+import {
+  SO_STATUS_BADGE,
+  SO_STATUS_LABEL,
+  type CreateSalesOrderInput,
+  type SalesOrder,
+  type UpdateSalesOrderInput,
+} from './types';
 
 export function SalesPage() {
   const queryClient = useQueryClient();
   const canRead = useAuthStore((s) => s.hasPermission('sales:access'));
   const canManage = useAuthStore((s) => s.hasPermission('sales:manage'));
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<SalesOrder | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
 
   const kpis = useQuery({ queryKey: ['sales', 'kpis'], queryFn: salesKpis, enabled: canRead });
@@ -59,6 +68,14 @@ export function SalesPage() {
   });
   const deleteMutation = useMutation({ mutationFn: deleteSalesOrder, onSuccess: invalidate });
   const restoreMutation = useMutation({ mutationFn: restoreSalesOrder, onSuccess: invalidate });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateSalesOrderInput }) =>
+      updateSalesOrder(id, input),
+    onSuccess: async () => {
+      await invalidate();
+      setEditing(null);
+    },
+  });
 
   if (!canRead) {
     return (
@@ -160,6 +177,11 @@ export function SalesPage() {
                         </button>
                       </>
                     ) : null}
+                    {canManage && !o.is_deleted && o.status === 'pending_payment' ? (
+                      <button className="btn btn-sm btn-ghost" onClick={() => setEditing(o)}>
+                        Editar
+                      </button>
+                    ) : null}
                     {canManage && o.is_deleted ? (
                       <button
                         className="btn btn-sm btn-ghost"
@@ -202,6 +224,17 @@ export function SalesPage() {
             await createMutation.mutateAsync(input);
           }}
           onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+
+      {editing ? (
+        <SalesOrderEditModal
+          order={editing}
+          submitting={updateMutation.isPending}
+          onSubmit={async (input) => {
+            await updateMutation.mutateAsync({ id: editing.id, input });
+          }}
+          onClose={() => setEditing(null)}
         />
       ) : null}
     </div>

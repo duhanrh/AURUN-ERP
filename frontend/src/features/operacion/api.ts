@@ -14,6 +14,9 @@ import type {
   SalesKpis,
   SalesOrder,
   SalesOrderStatus,
+  UpdateLotInput,
+  UpdatePurchaseOrderInput,
+  UpdateSalesOrderInput,
 } from './types';
 
 const withDeleted = (path: string, includeDeleted: boolean) =>
@@ -26,7 +29,7 @@ export const listLots = (includeDeleted = false) =>
 export const inventoryKpis = () => request<InventoryKpis>('/inventory/kpis');
 export const createLot = (input: CreateLotInput) =>
   request<Lot>('/inventory/lots', { method: 'POST', body: input });
-export const updateLot = (id: string, input: { location?: string | null; status?: string }) =>
+export const updateLot = (id: string, input: UpdateLotInput) =>
   request<Lot>(`/inventory/lots/${id}`, { method: 'PATCH', body: input });
 export const deleteLot = (id: string) =>
   request<Lot>(`/inventory/lots/${id}`, { method: 'DELETE' });
@@ -39,6 +42,8 @@ export const listPurchaseOrders = (includeDeleted = false) =>
 export const purchasingKpis = () => request<PurchasingKpis>('/purchasing/kpis');
 export const createPurchaseOrder = (input: CreatePurchaseOrderInput) =>
   request<PurchaseOrder>('/purchasing/orders', { method: 'POST', body: input });
+export const updatePurchaseOrder = (id: string, input: UpdatePurchaseOrderInput) =>
+  request<PurchaseOrder>(`/purchasing/orders/${id}`, { method: 'PATCH', body: input });
 export const approvePurchaseOrder = (id: string) =>
   request<PurchaseOrder>(`/purchasing/orders/${id}/approve`, { method: 'POST' });
 export const rejectPurchaseOrder = (id: string) =>
@@ -54,6 +59,8 @@ export const listSalesOrders = (includeDeleted = false) =>
 export const salesKpis = () => request<SalesKpis>('/sales/kpis');
 export const createSalesOrder = (input: CreateSalesOrderInput) =>
   request<SalesOrder>('/sales/orders', { method: 'POST', body: input });
+export const updateSalesOrder = (id: string, input: UpdateSalesOrderInput) =>
+  request<SalesOrder>(`/sales/orders/${id}`, { method: 'PATCH', body: input });
 export const setSalesStatus = (id: string, status: SalesOrderStatus) =>
   request<SalesOrder>(`/sales/orders/${id}/status`, { method: 'PATCH', body: { status } });
 export const deleteSalesOrder = (id: string) =>

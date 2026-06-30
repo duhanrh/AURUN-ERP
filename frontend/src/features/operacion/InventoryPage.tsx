@@ -15,17 +15,26 @@ import {
   listMaterials,
   listSuppliers,
   restoreLot,
+  updateLot,
 } from './api';
 import { ApiError } from '../auth/api';
 import { grams, money, purityPct } from './format';
+import { LotEditModal } from './LotEditModal';
 import { LotFormModal } from './LotFormModal';
-import { LOT_STATUS_BADGE, LOT_STATUS_LABEL, type CreateLotInput } from './types';
+import {
+  LOT_STATUS_BADGE,
+  LOT_STATUS_LABEL,
+  type CreateLotInput,
+  type Lot,
+  type UpdateLotInput,
+} from './types';
 
 export function InventoryPage() {
   const queryClient = useQueryClient();
   const canRead = useAuthStore((s) => s.hasPermission('inventory:access'));
   const canManage = useAuthStore((s) => s.hasPermission('inventory:manage'));
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Lot | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
 
   const kpis = useQuery({ queryKey: ['inventory', 'kpis'], queryFn: inventoryKpis, enabled: canRead });
@@ -51,6 +60,13 @@ export function InventoryPage() {
     onError: (e) => alert(e instanceof ApiError ? e.message : 'No se pudo eliminar el lote.'),
   });
   const restoreMutation = useMutation({ mutationFn: restoreLot, onSuccess: invalidate });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateLotInput }) => updateLot(id, input),
+    onSuccess: async () => {
+      await invalidate();
+      setEditing(null);
+    },
+  });
 
   if (!canRead) {
     return (
@@ -142,13 +158,18 @@ export function InventoryPage() {
                           Restaurar
                         </button>
                       ) : (
-                        <button
-                          className="btn btn-sm btn-ghost"
-                          disabled={deleteMutation.isPending}
-                          onClick={() => deleteMutation.mutate(lot.id)}
-                        >
-                          Eliminar
-                        </button>
+                        <>
+                          <button className="btn btn-sm btn-ghost" onClick={() => setEditing(lot)}>
+                            Editar
+                          </button>
+                          <button
+                            className="btn btn-sm btn-ghost"
+                            disabled={deleteMutation.isPending}
+                            onClick={() => deleteMutation.mutate(lot.id)}
+                          >
+                            Eliminar
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>
@@ -175,6 +196,17 @@ export function InventoryPage() {
             await createMutation.mutateAsync(input);
           }}
           onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+
+      {editing ? (
+        <LotEditModal
+          lot={editing}
+          submitting={updateMutation.isPending}
+          onSubmit={async (input) => {
+            await updateMutation.mutateAsync({ id: editing.id, input });
+          }}
+          onClose={() => setEditing(null)}
         />
       ) : null}
     </div>

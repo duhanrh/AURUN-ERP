@@ -124,6 +124,25 @@ export interface CreateSalesOrderInput {
   invoice_number?: string | null;
 }
 
+export interface UpdateLotInput {
+  location?: string | null;
+  status?: LotStatus;
+}
+
+export interface UpdatePurchaseOrderInput {
+  quantity_g?: string;
+  declared_purity?: string;
+  price_per_oz?: string;
+  form?: LotForm;
+  location?: string | null;
+  expected_delivery?: string | null;
+}
+
+export interface UpdateSalesOrderInput {
+  price_per_oz?: string;
+  invoice_number?: string | null;
+}
+
 export const LOT_STATUS_LABEL: Record<LotStatus, string> = {
   available: 'Disponible',
   reserved: 'Reservado',

@@ -17,10 +17,18 @@ import {
   purchasingKpis,
   rejectPurchaseOrder,
   restorePurchaseOrder,
+  updatePurchaseOrder,
 } from './api';
 import { grams, money, purityPct } from './format';
+import { PurchaseOrderEditModal } from './PurchaseOrderEditModal';
 import { PurchaseOrderFormModal } from './PurchaseOrderFormModal';
-import { PO_STATUS_BADGE, PO_STATUS_LABEL, type CreatePurchaseOrderInput } from './types';
+import {
+  PO_STATUS_BADGE,
+  PO_STATUS_LABEL,
+  type CreatePurchaseOrderInput,
+  type PurchaseOrder,
+  type UpdatePurchaseOrderInput,
+} from './types';
 
 export function PurchasingPage() {
   const queryClient = useQueryClient();
@@ -28,6 +36,7 @@ export function PurchasingPage() {
   const canManage = useAuthStore((s) => s.hasPermission('purchasing:manage'));
   const canApprove = useAuthStore((s) => s.hasPermission('purchase_order:approve'));
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<PurchaseOrder | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
 
   const kpis = useQuery({ queryKey: ['purchasing', 'kpis'], queryFn: purchasingKpis, enabled: canRead });
@@ -55,6 +64,14 @@ export function PurchasingPage() {
   const rejectMutation = useMutation({ mutationFn: rejectPurchaseOrder, onSuccess: invalidate });
   const deleteMutation = useMutation({ mutationFn: deletePurchaseOrder, onSuccess: invalidate });
   const restoreMutation = useMutation({ mutationFn: restorePurchaseOrder, onSuccess: invalidate });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdatePurchaseOrderInput }) =>
+      updatePurchaseOrder(id, input),
+    onSuccess: async () => {
+      await invalidate();
+      setEditing(null);
+    },
+  });
 
   if (!canRead) {
     return (
@@ -164,6 +181,11 @@ export function PurchasingPage() {
                         Restaurar
                       </button>
                     ) : null}
+                    {canManage && !o.is_deleted && o.status === 'pending_approval' ? (
+                      <button className="btn btn-sm btn-ghost" onClick={() => setEditing(o)}>
+                        Editar
+                      </button>
+                    ) : null}
                     {canManage &&
                     !o.is_deleted &&
                     (o.status === 'pending_approval' || o.status === 'rejected') ? (
@@ -199,6 +221,17 @@ export function PurchasingPage() {
             await createMutation.mutateAsync(input);
           }}
           onClose={() => setModalOpen(false)}
+        />
+      ) : null}
+
+      {editing ? (
+        <PurchaseOrderEditModal
+          order={editing}
+          submitting={updateMutation.isPending}
+          onSubmit={async (input) => {
+            await updateMutation.mutateAsync({ id: editing.id, input });
+          }}
+          onClose={() => setEditing(null)}
         />
       ) : null}
     </div>

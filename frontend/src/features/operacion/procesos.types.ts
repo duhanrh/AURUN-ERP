@@ -86,6 +86,18 @@ export interface CreateSampleInput {
   analyst?: string | null;
 }
 
+export interface UpdateTransformationInput {
+  responsible?: string | null;
+  started_at?: string | null;
+  expected_end?: string | null;
+}
+
+export interface UpdateSampleInput {
+  measured_purity?: string;
+  result?: SampleResult;
+  analyst?: string | null;
+}
+
 export const STAGE_ORDER: Stage[] = ['reception', 'analysis', 'melting', 'refining', 'certified'];
 export const STAGE_LABEL: Record<Stage, string> = {
   reception: 'Recepción',
