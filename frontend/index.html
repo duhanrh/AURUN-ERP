@@ -10,9 +10,69 @@
       rel="stylesheet"
     />
     <title>Aurum ERP — Sistema de Gestión Minera</title>
+    <style>
+      /* Splash previo a la hidratación (evita el parpadeo blanco antes del JS).
+         La app React monta un splash idéntico y luego lo reemplaza. */
+      html,
+      body {
+        margin: 0;
+        background: #0a0a0b;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: radial-gradient(120% 90% at 50% 38%, rgba(201, 168, 76, 0.1), transparent 60%),
+          #0a0a0b;
+        font-family: 'Space Grotesk', system-ui, sans-serif;
+      }
+      #boot .emblem {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+        color: #0a0a0b;
+        background: linear-gradient(135deg, #e8c96a, #7a6228);
+        box-shadow: 0 0 28px rgba(201, 168, 76, 0.35);
+        animation: boot-pulse 2.2s ease-in-out infinite;
+      }
+      #boot .brand {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        color: #f0ede8;
+      }
+      #boot .tagline {
+        font-size: 12px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: #4a4a5a;
+      }
+      @keyframes boot-pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 22px rgba(201, 168, 76, 0.28);
+        }
+        50% {
+          box-shadow: 0 0 38px rgba(201, 168, 76, 0.5);
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot">
+        <div class="emblem">⚜</div>
+        <div class="brand">AURUM ERP</div>
+        <div class="tagline">Mining Intelligence</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

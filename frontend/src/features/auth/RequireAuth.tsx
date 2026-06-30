@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 
+import { SplashScreen } from '../../components/SplashScreen';
 import { fetchMe } from './api';
 import { useAuthStore } from './authStore';
 
@@ -34,6 +35,6 @@ export function RequireAuth() {
   }, [accessToken, principal, setPrincipal, clear]);
 
   if (!accessToken) return <Navigate to="/login" replace />;
-  if (resolving) return <div className="route-loading">Cargando sesión…</div>;
+  if (resolving) return <SplashScreen />;
   return <Outlet />;
 }
