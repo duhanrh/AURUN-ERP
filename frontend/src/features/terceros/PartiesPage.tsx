@@ -12,6 +12,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { ReadOnlyHint } from '../../components/ReadOnlyHint';
 import { useAuthStore } from '../auth/authStore';
+import { listPayables, listReceivables } from '../finanzas/finanzas.api';
+import { listPurchaseOrders, listSalesOrders } from '../operacion/api';
 import { createParty, deleteParty, fetchKpis, listParties, restoreParty, updateParty } from './api';
 import { DetailDrawer, type DrawerSection, type DrawerStat } from './DetailDrawer';
 import { PartyFormModal } from './PartyFormModal';
@@ -41,6 +43,11 @@ export function PartiesPage({ kind }: PartiesPageProps) {
   const queryClient = useQueryClient();
   const canRead = useAuthStore((s) => s.hasPermission(`${resource}:access`));
   const canManage = useAuthStore((s) => s.hasPermission(`${resource}:manage`));
+  // Datos financieros/operativos de la ficha 360°, cada uno gated por su permiso.
+  const canFinance = useAuthStore((s) => s.hasPermission('accounting:access'));
+  const canOrders = useAuthStore((s) =>
+    s.hasPermission(isSupplier ? 'purchasing:access' : 'sales:access'),
+  );
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Party | null>(null);
@@ -57,6 +64,36 @@ export function PartiesPage({ kind }: PartiesPageProps) {
     queryFn: () => fetchKpis(kind),
     enabled: canRead,
   });
+  // Cartera (CxC clientes / CxP proveedores) y conteo de órdenes para la ficha 360°.
+  const carteraQuery = useQuery({
+    queryKey: ['accounting', isSupplier ? 'payables' : 'receivables'],
+    queryFn: () => (isSupplier ? listPayables() : listReceivables()),
+    enabled: canRead && canFinance,
+  });
+  const ordersQuery = useQuery({
+    queryKey: [isSupplier ? 'purchasing' : 'sales', 'orders', 'party-ids'],
+    queryFn: async (): Promise<string[]> => {
+      if (isSupplier) return (await listPurchaseOrders()).map((o) => o.supplier_id);
+      return (await listSalesOrders()).map((o) => o.customer_id);
+    },
+    enabled: canRead && canOrders,
+  });
+
+  const balanceByParty = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of carteraQuery.data ?? []) {
+      if (row.party_id) map.set(row.party_id, Number(row.balance));
+    }
+    return map;
+  }, [carteraQuery.data]);
+
+  const orderCountByParty = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const pid of ordersQuery.data ?? []) {
+      map.set(pid, (map.get(pid) ?? 0) + 1);
+    }
+    return map;
+  }, [ordersQuery.data]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: [resource] });
 
@@ -84,7 +121,16 @@ export function PartiesPage({ kind }: PartiesPageProps) {
     onSuccess: invalidate,
   });
 
-  const drawer = useMemo(() => (selected ? buildDrawer(selected, isSupplier) : null), [selected, isSupplier]);
+  const drawer = useMemo(
+    () =>
+      selected
+        ? buildDrawer(selected, isSupplier, {
+            balance: canFinance ? (balanceByParty.get(selected.id) ?? 0) : null,
+            orderCount: canOrders ? (orderCountByParty.get(selected.id) ?? 0) : null,
+          })
+        : null,
+    [selected, isSupplier, canFinance, canOrders, balanceByParty, orderCountByParty],
+  );
 
   if (!canRead) {
     return (
@@ -280,21 +326,34 @@ interface DrawerModel {
   sections: DrawerSection[];
 }
 
-function buildDrawer(party: Party, isSupplier: boolean): DrawerModel {
+interface DrawerExtras {
+  /** Saldo CxC (cliente) / CxP (proveedor); ``null`` si no hay permiso contable. */
+  balance: number | null;
+  /** Nº de órdenes del tercero; ``null`` si no hay permiso de compras/ventas. */
+  orderCount: number | null;
+}
+
+function buildDrawer(party: Party, isSupplier: boolean, extras: DrawerExtras): DrawerModel {
   const location = isSupplier ? party.country : party.city;
   const classifier = isSupplier ? party.main_material : party.segment;
   const subtitle = [classifier, location].filter(Boolean).join(' • ') || '—';
 
+  // Saldo: positivo = pendiente (rojo); cero = al día (verde). '—' sin permiso.
+  const balanceValue = extras.balance === null ? '—' : money(extras.balance);
+  const balanceTone: DrawerStat['tone'] =
+    extras.balance === null || extras.balance <= 0 ? 'green' : 'red';
+  const orderValue = extras.orderCount === null ? '—' : String(extras.orderCount);
+
   const stats: DrawerStat[] = isSupplier
     ? [
         { label: 'Rating', value: party.rating !== null ? `${party.rating.toFixed(1)}/5` : '—', tone: 'gold' },
-        { label: 'Saldo CxP', value: '—', tone: 'red' },
-        { label: 'Órdenes', value: '—' },
+        { label: 'Saldo CxP', value: balanceValue, tone: balanceTone },
+        { label: 'Órdenes', value: orderValue },
       ]
     : [
         { label: 'Crédito', value: party.credit_limit !== null ? money(party.credit_limit) : 'N/A', tone: 'gold' },
-        { label: 'Saldo CxC', value: '—', tone: 'red' },
-        { label: 'Órdenes', value: '—' },
+        { label: 'Saldo CxC', value: balanceValue, tone: balanceTone },
+        { label: 'Órdenes', value: orderValue },
       ];
 
   const contact: DrawerSection = {
