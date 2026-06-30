@@ -115,7 +115,10 @@ async def update_parameters(
 
 
 # ── Módulos ──────────────────────────────────────────────────────────────────
-@router.get("/modules", response_model=list[ModuleResponse], dependencies=[_read])
+# Lectura con solo autenticación: el sidebar de cualquier usuario necesita saber qué
+# módulos están activos para el tenant (no es información sensible). El alta/cambio
+# (PUT) sí exige configuration:manage.
+@router.get("/modules", response_model=list[ModuleResponse], dependencies=[_auth])
 async def list_modules(session: AsyncSession = Depends(get_session)) -> list[ModuleResponse]:
     views = await _service(session).list_modules()
     return [ModuleResponse.from_view(v) for v in views]

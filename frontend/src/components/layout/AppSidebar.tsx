@@ -1,9 +1,12 @@
 /** Barra lateral de navegación — réplica de `.sidebar` de la maqueta. */
 
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { NavLink, useNavigate } from 'react-router-dom';
 
 import { logout } from '../../features/auth/api';
 import { useAuthStore } from '../../features/auth/authStore';
+import { listModules } from '../../features/config/config.api';
 import { useBrandingStore } from '../../theme/brandingStore';
 import { NAV_SECTIONS } from '../../routes/navigation';
 import { useUiStore } from './uiStore';
@@ -32,6 +35,27 @@ export function AppSidebar() {
   const refreshToken = useAuthStore((s) => s.refreshToken);
   const clear = useAuthStore((s) => s.clear);
 
+  // Módulos activos del tenant: se ocultan del menú los desactivados (sección 7.17).
+  // Los ítems no "toggleables" (Dashboard, Configuración, Auditoría) no aparecen en
+  // la lista de módulos, así que siempre se muestran.
+  const modulesQuery = useQuery({
+    queryKey: ['configuration', 'modules'],
+    queryFn: listModules,
+    enabled: Boolean(principal),
+  });
+  const inactiveModules = useMemo(
+    () => new Set((modulesQuery.data ?? []).filter((m) => !m.is_active).map((m) => m.key)),
+    [modulesQuery.data],
+  );
+  const visibleSections = useMemo(
+    () =>
+      NAV_SECTIONS.map((section) => ({
+        ...section,
+        items: section.items.filter((item) => !inactiveModules.has(item.id)),
+      })).filter((section) => section.items.length > 0),
+    [inactiveModules],
+  );
+
   async function handleLogout() {
     try {
       if (refreshToken) await logout(refreshToken);
@@ -57,7 +81,7 @@ export function AppSidebar() {
       </div>
 
       <div className="nav-section">
-        {NAV_SECTIONS.map((section) => (
+        {visibleSections.map((section) => (
           <div key={section.label}>
             <div className="nav-label">{section.label}</div>
             {section.items.map((item) => (

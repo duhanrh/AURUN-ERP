@@ -200,6 +200,18 @@ async def test_branding_readable_but_write_requires_manage(client: AsyncClient) 
     )
     assert forbidden.status_code == 403
 
+    # Lista de módulos: legible por cualquier autenticado (el sidebar la necesita)…
+    modules = await client.get("/api/v1/configuration/modules", headers=reader_auth)
+    assert modules.status_code == 200
+    assert any(m["key"] == "inventario" for m in modules.json())
+    # …pero activar/desactivar sigue exigiendo configuration:manage.
+    toggle = await client.put(
+        "/api/v1/configuration/modules/reportes",
+        headers=reader_auth,
+        json={"is_active": False},
+    )
+    assert toggle.status_code == 403
+
 
 async def test_config_cross_tenant_isolation(client: AsyncClient) -> None:
     tenant_a = await _provision(client)
