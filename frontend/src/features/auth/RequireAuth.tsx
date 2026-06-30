@@ -11,6 +11,9 @@ import { SplashScreen } from '../../components/SplashScreen';
 import { fetchMe } from './api';
 import { useAuthStore } from './authStore';
 
+/** Tiempo mínimo que se muestra el splash al entrar (para que se alcance a ver). */
+const MIN_SPLASH_MS = 3000;
+
 export function RequireAuth() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const principal = useAuthStore((s) => s.principal);
@@ -18,6 +21,13 @@ export function RequireAuth() {
   const clear = useAuthStore((s) => s.clear);
 
   const [resolving, setResolving] = useState(accessToken !== null && principal === null);
+  // Garantiza un mínimo de splash aunque la sesión resuelva al instante.
+  const [minElapsed, setMinElapsed] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMinElapsed(true), MIN_SPLASH_MS);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -35,6 +45,6 @@ export function RequireAuth() {
   }, [accessToken, principal, setPrincipal, clear]);
 
   if (!accessToken) return <Navigate to="/login" replace />;
-  if (resolving) return <SplashScreen />;
+  if (resolving || !minElapsed) return <SplashScreen />;
   return <Outlet />;
 }
