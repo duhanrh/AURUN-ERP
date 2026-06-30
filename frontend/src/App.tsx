@@ -10,6 +10,7 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
+import { ModuleGuard } from './components/ModuleGuard';
 import { PlaceholderPage } from './components/PlaceholderPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './features/auth/LoginPage';
@@ -72,7 +73,11 @@ export default function App() {
               <Route element={<AppLayout />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 {NAV_ITEMS.map((item) => (
-                  <Route key={item.id} path={item.path} element={pageFor(item.id)} />
+                  <Route
+                    key={item.id}
+                    path={item.path}
+                    element={<ModuleGuard moduleKey={item.id}>{pageFor(item.id)}</ModuleGuard>}
+                  />
                 ))}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Route>
