@@ -45,9 +45,18 @@ La conexión se define por componentes en el `.env` (`AURUM_DB_HOST`, `AURUM_DB_
 uv run pytest                  # pruebas
 uv run pytest --cov            # pruebas con cobertura
 uv run ruff check .            # lint
-uv run ruff format .           # formato
+uv run ruff format .           # formato (aplica)
+uv run ruff format --check .   # formato (verifica, igual que el CI)
 uv run mypy src                # tipado estático
 ```
+
+> El CI ejecuta `ruff check .` **y** `ruff format --check .`. Para reproducir el
+> gate completo antes de hacer commit, instala los hooks (desde la raíz del repo):
+>
+> ```bash
+> pre-commit install            # una vez
+> pre-commit run --all-files    # opcional: corre el gate sobre todo el repo
+> ```
 
 ## Estructura
 

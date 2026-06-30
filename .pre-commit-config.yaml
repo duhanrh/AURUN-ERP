@@ -1,0 +1,31 @@
+# Hooks locales que reproducen el gate del CI (.github/workflows/ci.yml) antes
+# de cada commit, para que un fallo de formato/lint nunca llegue al pipeline.
+#
+# Instalación (una vez):
+#   pipx install pre-commit   # o: uv tool install pre-commit
+#   pre-commit install
+#
+# Ejecutar manualmente sobre todo el repo:
+#   pre-commit run --all-files
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      # Lint del backend (equivale a `ruff check .`).
+      - id: ruff
+        name: ruff (lint backend)
+        args: [--fix]
+        files: ^backend/
+      # Formato del backend (equivale a `ruff format --check .`).
+      - id: ruff-format
+        name: ruff (formato backend)
+        files: ^backend/
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: check-added-large-files
