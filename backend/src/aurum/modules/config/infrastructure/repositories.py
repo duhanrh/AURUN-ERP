@@ -13,7 +13,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aurum.modules.config.infrastructure.models import (
+    Currency,
     TenantBusinessParameters,
+    TenantCompany,
     TenantModuleConfig,
     UnitOfMeasure,
 )
@@ -85,3 +87,40 @@ class SqlAlchemyUnitOfMeasureRepository:
         self._session.add(unit)
         await self._session.flush()
         return unit
+
+
+class SqlAlchemyCurrencyRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def list_all(self, *, include_deleted: bool = False) -> list[Currency]:
+        stmt = select(Currency)
+        if not include_deleted:
+            stmt = stmt.where(Currency.deleted_at.is_(None))
+        stmt = stmt.order_by(Currency.is_base.desc(), Currency.code)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get(self, currency_id: uuid.UUID) -> Currency | None:
+        result = await self._session.execute(select(Currency).where(Currency.id == currency_id))
+        return result.scalar_one_or_none()
+
+    async def get_by_code(self, code: str) -> Currency | None:
+        result = await self._session.execute(
+            select(Currency).where(Currency.code == code, Currency.deleted_at.is_(None))
+        )
+        return result.scalar_one_or_none()
+
+    async def add(self, currency: Currency) -> Currency:
+        self._session.add(currency)
+        await self._session.flush()
+        return currency
+
+
+class SqlAlchemyCompanyRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get(self) -> TenantCompany | None:
+        result = await self._session.execute(select(TenantCompany))
+        return result.scalar_one_or_none()

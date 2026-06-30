@@ -11,17 +11,20 @@ from __future__ import annotations
 from aurum.modules.config.application.dto import (
     BrandingUpdate,
     BrandingView,
+    CompanyUpdate,
+    CompanyView,
     ModuleView,
     ParametersUpdate,
     ParametersView,
 )
 from aurum.modules.config.application.ports import (
     BrandingRepository,
+    CompanyRepository,
     ModuleConfigRepository,
     ParametersRepository,
 )
 from aurum.modules.config.domain.settings import TOGGLEABLE_MODULES
-from aurum.modules.config.infrastructure.models import TenantBusinessParameters
+from aurum.modules.config.infrastructure.models import TenantBusinessParameters, TenantCompany
 from aurum.modules.tenants.infrastructure.models import TenantBranding
 from aurum.shared.errors import NotFoundError
 
@@ -33,10 +36,12 @@ class ConfigService:
         branding: BrandingRepository,
         parameters: ParametersRepository,
         modules: ModuleConfigRepository,
+        company: CompanyRepository,
     ) -> None:
         self._branding = branding
         self._parameters = parameters
         self._modules = modules
+        self._company = company
 
     # ── Marca ──────────────────────────────────────────────────────────────
     async def get_branding(self) -> BrandingView:
@@ -112,6 +117,30 @@ class ConfigService:
             raise NotFoundError("El tenant no tiene parámetros inicializados.")
         return params
 
+    # ── Datos del comercio / empresa ────────────────────────────────────────
+    async def get_company(self) -> CompanyView:
+        company = await self._require_company()
+        return _company_to_view(company)
+
+    async def update_company(self, data: CompanyUpdate) -> CompanyView:
+        company = await self._require_company()
+        company.legal_name = data.legal_name
+        company.trade_name = data.trade_name
+        company.tax_id = data.tax_id
+        company.tax_regime = data.tax_regime
+        company.address = data.address
+        company.city = data.city
+        company.phone = data.phone
+        company.email = data.email
+        company.website = data.website
+        return _company_to_view(company)
+
+    async def _require_company(self) -> TenantCompany:
+        company = await self._company.get()
+        if company is None:
+            raise NotFoundError("El tenant no tiene datos de empresa inicializados.")
+        return company
+
 
 def _branding_to_view(b: TenantBranding) -> BrandingView:
     return BrandingView(
@@ -123,6 +152,20 @@ def _branding_to_view(b: TenantBranding) -> BrandingView:
         color_success=b.color_success,
         color_danger=b.color_danger,
         is_customized=b.is_customized,
+    )
+
+
+def _company_to_view(c: TenantCompany) -> CompanyView:
+    return CompanyView(
+        legal_name=c.legal_name,
+        trade_name=c.trade_name,
+        tax_id=c.tax_id,
+        tax_regime=c.tax_regime,
+        address=c.address,
+        city=c.city,
+        phone=c.phone,
+        email=c.email,
+        website=c.website,
     )
 
 

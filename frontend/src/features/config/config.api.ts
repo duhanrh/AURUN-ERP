@@ -5,12 +5,16 @@ import type {
   ApiKey,
   Branding,
   BusinessParameters,
+  Company,
   ConversionResult,
   CreatedApiKey,
+  CreateCurrencyInput,
   CreateUnitInput,
+  Currency,
   ModuleConfig,
   UnitOfMeasure,
   UpdateBrandingInput,
+  UpdateCurrencyInput,
   UpdateUnitInput,
 } from './config.types';
 
@@ -46,6 +50,23 @@ export const convertUnits = (quantity: string, fromUnit: string, toUnit: string)
     method: 'POST',
     body: { quantity, from_unit: fromUnit, to_unit: toUnit },
   });
+
+export const listCurrencies = (includeDeleted = false) =>
+  request<Currency[]>(`/configuration/currencies?include_deleted=${includeDeleted}`);
+export const createCurrency = (input: CreateCurrencyInput) =>
+  request<Currency>('/configuration/currencies', { method: 'POST', body: input });
+export const updateCurrency = (id: string, input: UpdateCurrencyInput) =>
+  request<Currency>(`/configuration/currencies/${id}`, { method: 'PATCH', body: input });
+export const setBaseCurrency = (id: string) =>
+  request<Currency>(`/configuration/currencies/${id}/set-base`, { method: 'POST' });
+export const deleteCurrency = (id: string) =>
+  request<Currency>(`/configuration/currencies/${id}`, { method: 'DELETE' });
+export const restoreCurrency = (id: string) =>
+  request<Currency>(`/configuration/currencies/${id}/restore`, { method: 'POST' });
+
+export const getCompany = () => request<Company>('/configuration/company');
+export const updateCompany = (input: Company) =>
+  request<Company>('/configuration/company', { method: 'PUT', body: input });
 
 export const listApiKeys = () => request<ApiKey[]>('/configuration/api-keys');
 export const availableScopes = () =>

@@ -25,10 +25,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from aurum.modules.accounting.domain.chart import BASE_ACCOUNTS
 from aurum.modules.accounting.infrastructure.models import ChartAccount
+from aurum.modules.config.domain.currencies import BASE_CURRENCIES
 from aurum.modules.config.domain.settings import DEFAULT_PARAMETERS, TOGGLEABLE_MODULES
 from aurum.modules.config.domain.units import BASE_UNITS
 from aurum.modules.config.infrastructure.models import (
+    Currency,
     TenantBusinessParameters,
+    TenantCompany,
     TenantModuleConfig,
     UnitOfMeasure,
 )
@@ -95,6 +98,8 @@ class ProvisioningService:
         self._seed_accounts(tenant.id)
         self._seed_configuration(tenant.id)
         self._seed_units(tenant.id)
+        self._seed_currencies(tenant.id)
+        self._session.add(TenantCompany(tenant_id=tenant.id))
 
         roles_by_slug = await sync_tenant_roles(self._session, tenant.id, catalog)
         admin_role = roles_by_slug["superusuario"]
@@ -157,6 +162,22 @@ class ProvisioningService:
                     symbol=definition.symbol,
                     grams_factor=definition.grams_factor,
                     is_base=definition.is_base,
+                    is_active=True,
+                )
+            )
+
+    def _seed_currencies(self, tenant_id: uuid.UUID) -> None:
+        """Siembra el catálogo base de monedas; la base = parámetro ``base_currency``."""
+        base_code = DEFAULT_PARAMETERS.base_currency
+        for definition in BASE_CURRENCIES:
+            self._session.add(
+                Currency(
+                    tenant_id=tenant_id,
+                    code=definition.code,
+                    name=definition.name,
+                    symbol=definition.symbol,
+                    decimals=definition.decimals,
+                    is_base=definition.code == base_code,
                     is_active=True,
                 )
             )

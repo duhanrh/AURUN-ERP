@@ -10,15 +10,25 @@ import { useAuthStore } from '../auth/authStore';
 import { UsersRolesPage } from '../users/UsersRolesPage';
 import { ApiKeysTab } from './ApiKeysTab';
 import { AppearanceTab } from './AppearanceTab';
+import { CompanyTab } from './CompanyTab';
+import { CurrenciesTab } from './CurrenciesTab';
 import { ModulesTab } from './ModulesTab';
 import { ParametersTab } from './ParametersTab';
 import { UnitsTab } from './UnitsTab';
 
-type Tab = 'apariencia' | 'modulos' | 'parametros' | 'unidades' | 'usuarios' | 'apikeys';
+type Tab =
+  | 'empresa'
+  | 'apariencia'
+  | 'modulos'
+  | 'parametros'
+  | 'unidades'
+  | 'monedas'
+  | 'usuarios'
+  | 'apikeys';
 
 export function ConfiguracionPage() {
   const canAccess = useAuthStore((s) => s.hasPermission('configuration:access'));
-  const [tab, setTab] = useState<Tab>('apariencia');
+  const [tab, setTab] = useState<Tab>('empresa');
 
   if (!canAccess) {
     return (
@@ -33,6 +43,9 @@ export function ConfiguracionPage() {
   return (
     <div className="config-section">
       <div className="tab-bar">
+        <button className={`tab ${tab === 'empresa' ? 'active' : ''}`} onClick={() => setTab('empresa')}>
+          Empresa
+        </button>
         <button className={`tab ${tab === 'apariencia' ? 'active' : ''}`} onClick={() => setTab('apariencia')}>
           Apariencia / Marca
         </button>
@@ -45,6 +58,9 @@ export function ConfiguracionPage() {
         <button className={`tab ${tab === 'unidades' ? 'active' : ''}`} onClick={() => setTab('unidades')}>
           Unidades
         </button>
+        <button className={`tab ${tab === 'monedas' ? 'active' : ''}`} onClick={() => setTab('monedas')}>
+          Monedas
+        </button>
         <button className={`tab ${tab === 'usuarios' ? 'active' : ''}`} onClick={() => setTab('usuarios')}>
           Usuarios y Roles
         </button>
@@ -53,10 +69,12 @@ export function ConfiguracionPage() {
         </button>
       </div>
 
+      {tab === 'empresa' ? <CompanyTab /> : null}
       {tab === 'apariencia' ? <AppearanceTab /> : null}
       {tab === 'modulos' ? <ModulesTab /> : null}
       {tab === 'parametros' ? <ParametersTab /> : null}
       {tab === 'unidades' ? <UnitsTab /> : null}
+      {tab === 'monedas' ? <CurrenciesTab /> : null}
       {tab === 'usuarios' ? <UsersRolesPage /> : null}
       {tab === 'apikeys' ? <ApiKeysTab /> : null}
     </div>

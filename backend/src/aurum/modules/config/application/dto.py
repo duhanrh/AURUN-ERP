@@ -87,3 +87,58 @@ class UnitPatch:
     symbol: str | None = None
     grams_factor: Decimal | None = None
     is_active: bool | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CurrencyView:
+    id: str
+    code: str
+    name: str
+    symbol: str
+    decimals: int
+    is_base: bool
+    is_active: bool
+    is_deleted: bool
+
+
+@dataclass(frozen=True, slots=True)
+class CurrencyCreate:
+    code: str
+    name: str
+    symbol: str
+    decimals: int = 2
+    is_active: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class CurrencyPatch:
+    name: str | None = None
+    symbol: str | None = None
+    decimals: int | None = None
+    is_active: bool | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CompanyView:
+    legal_name: str
+    trade_name: str
+    tax_id: str
+    tax_regime: str
+    address: str
+    city: str
+    phone: str
+    email: str
+    website: str
+
+
+@dataclass(frozen=True, slots=True)
+class CompanyUpdate:
+    legal_name: str
+    trade_name: str
+    tax_id: str
+    tax_regime: str
+    address: str
+    city: str
+    phone: str
+    email: str
+    website: str

@@ -72,6 +72,44 @@ export interface ConversionResult {
   result: string;
 }
 
+export interface Currency {
+  id: string;
+  code: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  is_base: boolean;
+  is_active: boolean;
+  is_deleted: boolean;
+}
+
+export interface CreateCurrencyInput {
+  code: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  is_active?: boolean;
+}
+
+export interface UpdateCurrencyInput {
+  name?: string;
+  symbol?: string;
+  decimals?: number;
+  is_active?: boolean;
+}
+
+export interface Company {
+  legal_name: string;
+  trade_name: string;
+  tax_id: string;
+  tax_regime: string;
+  address: string;
+  city: string;
+  phone: string;
+  email: string;
+  website: string;
+}
+
 export interface ApiKey {
   id: string;
   name: string;

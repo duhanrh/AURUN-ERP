@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Index, Numeric, String, UniqueConstraint, text
+from sqlalchemy import Boolean, Index, Integer, Numeric, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -89,3 +89,53 @@ class UnitOfMeasure(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     grams_factor: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
     is_base: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+
+class Currency(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
+    """Moneda configurable por tenant (sección 7.17).
+
+    Una sola moneda lleva ``is_base=True`` (la del negocio). El ``code`` (ISO,
+    p. ej. ``COP``/``USD``) es único por tenant entre las monedas vigentes.
+    """
+
+    __tablename__ = "currencies"
+    __table_args__ = (
+        Index(
+            "uq_currencies_tenant_id_code",
+            "tenant_id",
+            "code",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    code: Mapped[str] = mapped_column(String(8), nullable=False)
+    name: Mapped[str] = mapped_column(String(64), nullable=False)
+    symbol: Mapped[str] = mapped_column(String(8), nullable=False)
+    decimals: Mapped[int] = mapped_column(Integer, nullable=False, server_default="2")
+    is_base: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+
+class TenantCompany(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Datos del comercio/empresa del tenant (1:1), usados en documentos impresos.
+
+    Distinto de ``tenant_branding`` (identidad visual): aquí van los datos
+    legales/fiscales (razón social, NIT, dirección, contacto) que encabezan las
+    facturas y recibos.
+    """
+
+    __tablename__ = "tenant_company"
+    __table_args__ = (UniqueConstraint("tenant_id", name="uq_tenant_company_tenant_id"),)
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    legal_name: Mapped[str] = mapped_column(String(160), nullable=False, server_default="")
+    trade_name: Mapped[str] = mapped_column(String(160), nullable=False, server_default="")
+    tax_id: Mapped[str] = mapped_column(String(40), nullable=False, server_default="")
+    tax_regime: Mapped[str] = mapped_column(String(80), nullable=False, server_default="")
+    address: Mapped[str] = mapped_column(String(200), nullable=False, server_default="")
+    city: Mapped[str] = mapped_column(String(80), nullable=False, server_default="")
+    phone: Mapped[str] = mapped_column(String(40), nullable=False, server_default="")
+    email: Mapped[str] = mapped_column(String(160), nullable=False, server_default="")
+    website: Mapped[str] = mapped_column(String(200), nullable=False, server_default="")

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuthStore } from '../auth/authStore';
-import { getParameters, updateParameters } from './config.api';
+import { getParameters, listCurrencies, listUnits, updateParameters } from './config.api';
 import type { BusinessParameters } from './config.types';
 
 const EMPTY: BusinessParameters = {
@@ -22,6 +22,14 @@ export function ParametersTab() {
   const queryClient = useQueryClient();
   const canManage = useAuthStore((s) => s.hasPermission('configuration:manage'));
   const params = useQuery({ queryKey: ['configuration', 'parameters'], queryFn: getParameters });
+  const currencies = useQuery({
+    queryKey: ['configuration', 'currencies', false],
+    queryFn: () => listCurrencies(false),
+  });
+  const units = useQuery({
+    queryKey: ['configuration', 'units', false],
+    queryFn: () => listUnits(false),
+  });
   const [form, setForm] = useState<BusinessParameters>(EMPTY);
 
   useEffect(() => {
@@ -49,18 +57,29 @@ export function ParametersTab() {
       <div className="field-row">
         <label className="field">
           <span>Moneda base</span>
-          <select value={form.base_currency} disabled={!canManage} onChange={(e) => set({ base_currency: e.target.value })}>
-            <option value="USD">USD</option>
-            <option value="COP">COP</option>
-            <option value="EUR">EUR</option>
+          <select value={form.base_currency} disabled title="La moneda base se gestiona en la pestaña Monedas">
+            {(currencies.data ?? []).map((c) => (
+              <option key={c.id} value={c.code}>
+                {c.code} — {c.name}
+              </option>
+            ))}
+            {currencies.data && !currencies.data.some((c) => c.code === form.base_currency) ? (
+              <option value={form.base_currency}>{form.base_currency}</option>
+            ) : null}
           </select>
+          <span className="field-hint">Se gestiona en la pestaña «Monedas».</span>
         </label>
         <label className="field">
           <span>Unidad de peso</span>
           <select value={form.weight_unit} disabled={!canManage} onChange={(e) => set({ weight_unit: e.target.value })}>
-            <option value="g">Gramos</option>
-            <option value="kg">Kilogramos</option>
-            <option value="oz">Onzas</option>
+            {(units.data ?? []).map((u) => (
+              <option key={u.id} value={u.symbol}>
+                {u.name} ({u.symbol})
+              </option>
+            ))}
+            {units.data && !units.data.some((u) => u.symbol === form.weight_unit) ? (
+              <option value={form.weight_unit}>{form.weight_unit}</option>
+            ) : null}
           </select>
         </label>
       </div>

@@ -14,8 +14,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from aurum.modules.audit.domain.actions import (
     CONFIG_BRANDING_RESET,
     CONFIG_BRANDING_UPDATE,
+    CONFIG_COMPANY_UPDATE,
     CONFIG_MODULE_TOGGLE,
     CONFIG_PARAMETERS_UPDATE,
+    CURRENCY_CREATE,
+    CURRENCY_DELETE,
+    CURRENCY_RESTORE,
+    CURRENCY_SET_BASE,
+    CURRENCY_UPDATE,
     UNIT_CREATE,
     UNIT_DELETE,
     UNIT_RESTORE,
@@ -27,24 +33,32 @@ from aurum.modules.auth.presentation.dependencies import (
     get_current_principal,
     require_permission,
 )
+from aurum.modules.config.application.currency_service import CurrencyService
 from aurum.modules.config.application.services import ConfigService
 from aurum.modules.config.application.units_service import UnitOfMeasureService
 from aurum.modules.config.infrastructure.repositories import (
     SqlAlchemyBrandingRepository,
+    SqlAlchemyCompanyRepository,
+    SqlAlchemyCurrencyRepository,
     SqlAlchemyModuleConfigRepository,
     SqlAlchemyParametersRepository,
     SqlAlchemyUnitOfMeasureRepository,
 )
 from aurum.modules.config.presentation.schemas import (
     BrandingResponse,
+    CompanyResponse,
     ConvertRequest,
     ConvertResponse,
+    CreateCurrencyRequest,
     CreateUnitRequest,
+    CurrencyResponse,
     ModuleResponse,
     ParametersResponse,
     SetModuleRequest,
     UnitResponse,
     UpdateBrandingRequest,
+    UpdateCompanyRequest,
+    UpdateCurrencyRequest,
     UpdateParametersRequest,
     UpdateUnitRequest,
 )
@@ -62,12 +76,21 @@ def _service(session: AsyncSession) -> ConfigService:
         branding=SqlAlchemyBrandingRepository(session),
         parameters=SqlAlchemyParametersRepository(session),
         modules=SqlAlchemyModuleConfigRepository(session),
+        company=SqlAlchemyCompanyRepository(session),
     )
 
 
 def _units(session: AsyncSession, tenant_id: uuid.UUID) -> UnitOfMeasureService:
     return UnitOfMeasureService(
         tenant_id=tenant_id, units=SqlAlchemyUnitOfMeasureRepository(session)
+    )
+
+
+def _currencies(session: AsyncSession, tenant_id: uuid.UUID) -> CurrencyService:
+    return CurrencyService(
+        tenant_id=tenant_id,
+        currencies=SqlAlchemyCurrencyRepository(session),
+        parameters=SqlAlchemyParametersRepository(session),
     )
 
 
@@ -291,3 +314,151 @@ async def restore_unit(
         request=request,
     )
     return UnitResponse.from_view(view)
+
+
+# ── Datos del comercio / empresa ─────────────────────────────────────────────
+@router.get("/company", response_model=CompanyResponse, dependencies=[_read])
+async def get_company(session: AsyncSession = Depends(get_session)) -> CompanyResponse:
+    return CompanyResponse.from_view(await _service(session).get_company())
+
+
+@router.put("/company", response_model=CompanyResponse)
+async def update_company(
+    payload: UpdateCompanyRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> CompanyResponse:
+    view = await _service(session).update_company(payload.to_dto())
+    await record_event(
+        session,
+        tenant_id,
+        action=CONFIG_COMPANY_UPDATE,
+        entity_type="company",
+        principal=principal,
+        request=request,
+        changes=payload.model_dump(mode="json"),
+    )
+    return CompanyResponse.from_view(view)
+
+
+# ── Monedas ──────────────────────────────────────────────────────────────────
+@router.get("/currencies", response_model=list[CurrencyResponse], dependencies=[_read])
+async def list_currencies(
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    include_deleted: bool = False,
+) -> list[CurrencyResponse]:
+    views = await _currencies(session, tenant_id).list_currencies(include_deleted=include_deleted)
+    return [CurrencyResponse.from_view(v) for v in views]
+
+
+@router.post("/currencies", response_model=CurrencyResponse)
+async def create_currency(
+    payload: CreateCurrencyRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> CurrencyResponse:
+    view = await _currencies(session, tenant_id).create_currency(payload.to_dto())
+    await record_event(
+        session,
+        tenant_id,
+        action=CURRENCY_CREATE,
+        entity_type="currency",
+        entity_id=uuid.UUID(view.id),
+        principal=principal,
+        request=request,
+        changes={"code": view.code},
+    )
+    return CurrencyResponse.from_view(view)
+
+
+@router.patch("/currencies/{currency_id}", response_model=CurrencyResponse)
+async def update_currency(
+    currency_id: uuid.UUID,
+    payload: UpdateCurrencyRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> CurrencyResponse:
+    view = await _currencies(session, tenant_id).update_currency(currency_id, payload.to_patch())
+    await record_event(
+        session,
+        tenant_id,
+        action=CURRENCY_UPDATE,
+        entity_type="currency",
+        entity_id=currency_id,
+        principal=principal,
+        request=request,
+        changes=payload.model_dump(exclude_unset=True, mode="json"),
+    )
+    return CurrencyResponse.from_view(view)
+
+
+@router.post("/currencies/{currency_id}/set-base", response_model=CurrencyResponse)
+async def set_base_currency(
+    currency_id: uuid.UUID,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> CurrencyResponse:
+    view = await _currencies(session, tenant_id).set_base(currency_id)
+    await record_event(
+        session,
+        tenant_id,
+        action=CURRENCY_SET_BASE,
+        entity_type="currency",
+        entity_id=currency_id,
+        principal=principal,
+        request=request,
+        changes={"code": view.code},
+    )
+    return CurrencyResponse.from_view(view)
+
+
+@router.delete("/currencies/{currency_id}", response_model=CurrencyResponse)
+async def delete_currency(
+    currency_id: uuid.UUID,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> CurrencyResponse:
+    view = await _currencies(session, tenant_id).delete_currency(currency_id)
+    await record_event(
+        session,
+        tenant_id,
+        action=CURRENCY_DELETE,
+        entity_type="currency",
+        entity_id=currency_id,
+        principal=principal,
+        request=request,
+        changes={"code": view.code},
+    )
+    return CurrencyResponse.from_view(view)
+
+
+@router.post("/currencies/{currency_id}/restore", response_model=CurrencyResponse)
+async def restore_currency(
+    currency_id: uuid.UUID,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    tenant_id: uuid.UUID = Depends(require_tenant_id),
+    principal: Principal = _manage,
+) -> CurrencyResponse:
+    view = await _currencies(session, tenant_id).restore_currency(currency_id)
+    await record_event(
+        session,
+        tenant_id,
+        action=CURRENCY_RESTORE,
+        entity_type="currency",
+        entity_id=currency_id,
+        principal=principal,
+        request=request,
+    )
+    return CurrencyResponse.from_view(view)

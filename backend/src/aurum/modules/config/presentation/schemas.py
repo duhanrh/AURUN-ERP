@@ -9,6 +9,11 @@ from pydantic import BaseModel, Field
 from aurum.modules.config.application.dto import (
     BrandingUpdate,
     BrandingView,
+    CompanyUpdate,
+    CompanyView,
+    CurrencyCreate,
+    CurrencyPatch,
+    CurrencyView,
     ModuleView,
     ParametersUpdate,
     ParametersView,
@@ -194,3 +199,110 @@ class ConvertResponse(BaseModel):
     to_unit: str
     grams: Decimal
     result: Decimal
+
+
+class CurrencyResponse(BaseModel):
+    id: str
+    code: str
+    name: str
+    symbol: str
+    decimals: int
+    is_base: bool
+    is_active: bool
+    is_deleted: bool
+
+    @classmethod
+    def from_view(cls, v: CurrencyView) -> CurrencyResponse:
+        return cls(
+            id=v.id,
+            code=v.code,
+            name=v.name,
+            symbol=v.symbol,
+            decimals=v.decimals,
+            is_base=v.is_base,
+            is_active=v.is_active,
+            is_deleted=v.is_deleted,
+        )
+
+
+class CreateCurrencyRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=8)
+    name: str = Field(min_length=1, max_length=64)
+    symbol: str = Field(min_length=1, max_length=8)
+    decimals: int = Field(default=2, ge=0, le=6)
+    is_active: bool = True
+
+    def to_dto(self) -> CurrencyCreate:
+        return CurrencyCreate(
+            code=self.code,
+            name=self.name,
+            symbol=self.symbol,
+            decimals=self.decimals,
+            is_active=self.is_active,
+        )
+
+
+class UpdateCurrencyRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=64)
+    symbol: str | None = Field(default=None, min_length=1, max_length=8)
+    decimals: int | None = Field(default=None, ge=0, le=6)
+    is_active: bool | None = None
+
+    def to_patch(self) -> CurrencyPatch:
+        return CurrencyPatch(
+            name=self.name,
+            symbol=self.symbol,
+            decimals=self.decimals,
+            is_active=self.is_active,
+        )
+
+
+class CompanyResponse(BaseModel):
+    legal_name: str
+    trade_name: str
+    tax_id: str
+    tax_regime: str
+    address: str
+    city: str
+    phone: str
+    email: str
+    website: str
+
+    @classmethod
+    def from_view(cls, v: CompanyView) -> CompanyResponse:
+        return cls(
+            legal_name=v.legal_name,
+            trade_name=v.trade_name,
+            tax_id=v.tax_id,
+            tax_regime=v.tax_regime,
+            address=v.address,
+            city=v.city,
+            phone=v.phone,
+            email=v.email,
+            website=v.website,
+        )
+
+
+class UpdateCompanyRequest(BaseModel):
+    legal_name: str = Field(default="", max_length=160)
+    trade_name: str = Field(default="", max_length=160)
+    tax_id: str = Field(default="", max_length=40)
+    tax_regime: str = Field(default="", max_length=80)
+    address: str = Field(default="", max_length=200)
+    city: str = Field(default="", max_length=80)
+    phone: str = Field(default="", max_length=40)
+    email: str = Field(default="", max_length=160)
+    website: str = Field(default="", max_length=200)
+
+    def to_dto(self) -> CompanyUpdate:
+        return CompanyUpdate(
+            legal_name=self.legal_name,
+            trade_name=self.trade_name,
+            tax_id=self.tax_id,
+            tax_regime=self.tax_regime,
+            address=self.address,
+            city=self.city,
+            phone=self.phone,
+            email=self.email,
+            website=self.website,
+        )
