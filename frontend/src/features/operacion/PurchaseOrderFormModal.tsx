@@ -1,8 +1,10 @@
 /** Modal "Nueva Orden de Compra" (réplica de `modal-compra`, sección 7.2). */
 
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 
+import { SearchableSelect, type SelectOption } from '../../components/SearchableSelect';
 import { ApiError } from '../auth/api';
+import { QuickCreatePartyModal } from '../terceros/QuickCreatePartyModal';
 import type { Party } from '../terceros/types';
 import type { CreatePurchaseOrderInput, LotForm, Material } from './types';
 
@@ -15,6 +17,7 @@ interface Props {
 }
 
 export function PurchaseOrderFormModal({ materials, suppliers, submitting, onSubmit, onClose }: Props) {
+  const [extraSuppliers, setExtraSuppliers] = useState<Party[]>([]);
   const [supplierId, setSupplierId] = useState(suppliers[0]?.id ?? '');
   const [materialId, setMaterialId] = useState(materials[0]?.id ?? '');
   const [quantity, setQuantity] = useState('');
@@ -23,10 +26,29 @@ export function PurchaseOrderFormModal({ materials, suppliers, submitting, onSub
   const [pricePerOz, setPricePerOz] = useState('');
   const [delivery, setDelivery] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [createName, setCreateName] = useState<string | null>(null);
+
+  const allSuppliers = useMemo(() => {
+    const seen = new Set(suppliers.map((s) => s.id));
+    return [...extraSuppliers.filter((s) => !seen.has(s.id)), ...suppliers];
+  }, [suppliers, extraSuppliers]);
+
+  const supplierOptions: SelectOption[] = allSuppliers.map((s) => ({
+    value: s.id,
+    label: s.legal_name,
+    hint: s.tax_id,
+  }));
+  const materialOptions: SelectOption[] = materials.map((m) => ({
+    value: m.id,
+    label: m.name,
+    hint: m.code,
+  }));
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!supplierId) return setError('Selecciona un proveedor.');
+    if (!materialId) return setError('Selecciona un material.');
     try {
       await onSubmit({
         supplier_id: supplierId,
@@ -43,97 +65,112 @@ export function PurchaseOrderFormModal({ materials, suppliers, submitting, onSub
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
-        <div className="modal-header">
-          <h3>Nueva Orden de Compra</h3>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar">
-            ✕
-          </button>
-        </div>
-        <div className="modal-body">
-          <label className="field">
-            <span>Proveedor</span>
-            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.legal_name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="field-row">
-            <label className="field">
-              <span>Material</span>
-              <select value={materialId} onChange={(e) => setMaterialId(e.target.value)} required>
-                {materials.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>Tipo</span>
-              <select value={form} onChange={(e) => setForm(e.target.value as LotForm)}>
-                <option value="raw">Crudo</option>
-                <option value="refined">Refinado</option>
-              </select>
-            </label>
+    <>
+      <div className="modal-overlay" onClick={onClose}>
+        <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
+          <div className="modal-header">
+            <h3>Nueva Orden de Compra</h3>
+            <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar">
+              ✕
+            </button>
           </div>
-          <div className="field-row">
+          <div className="modal-body">
             <label className="field">
-              <span>Cantidad (g)</span>
-              <input
-                type="number"
-                min={0}
-                step={0.0001}
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                required
+              <span>Proveedor</span>
+              <SearchableSelect
+                options={supplierOptions}
+                value={supplierId}
+                onChange={setSupplierId}
+                placeholder="Buscar proveedor…"
+                onCreateNew={(q) => setCreateName(q)}
+                createLabel={(q) => `Crear proveedor «${q}»`}
               />
             </label>
-            <label className="field">
-              <span>Pureza declarada (%)</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={0.01}
-                value={purityPct}
-                onChange={(e) => setPurityPct(e.target.value)}
-                required
-              />
-            </label>
+            <div className="field-row">
+              <label className="field">
+                <span>Material</span>
+                <SearchableSelect
+                  options={materialOptions}
+                  value={materialId}
+                  onChange={setMaterialId}
+                  placeholder="Buscar material…"
+                />
+              </label>
+              <label className="field">
+                <span>Tipo</span>
+                <select value={form} onChange={(e) => setForm(e.target.value as LotForm)}>
+                  <option value="raw">Crudo</option>
+                  <option value="refined">Refinado</option>
+                </select>
+              </label>
+            </div>
+            <div className="field-row">
+              <label className="field">
+                <span>Cantidad (g)</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.0001}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Pureza declarada (%)</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.01}
+                  value={purityPct}
+                  onChange={(e) => setPurityPct(e.target.value)}
+                  required
+                />
+              </label>
+            </div>
+            <div className="field-row">
+              <label className="field">
+                <span>Precio pactado (USD/oz)</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={pricePerOz}
+                  onChange={(e) => setPricePerOz(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>Entrega estimada</span>
+                <input type="date" value={delivery} onChange={(e) => setDelivery(e.target.value)} />
+              </label>
+            </div>
+            {error ? <div className="login-error">{error}</div> : null}
           </div>
-          <div className="field-row">
-            <label className="field">
-              <span>Precio pactado (USD/oz)</span>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={pricePerOz}
-                onChange={(e) => setPricePerOz(e.target.value)}
-                required
-              />
-            </label>
-            <label className="field">
-              <span>Entrega estimada</span>
-              <input type="date" value={delivery} onChange={(e) => setDelivery(e.target.value)} />
-            </label>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Guardando…' : 'Crear orden'}
+            </button>
           </div>
-          {error ? <div className="login-error">{error}</div> : null}
-        </div>
-        <div className="modal-footer">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Cancelar
-          </button>
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'Guardando…' : 'Crear orden'}
-          </button>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+
+      {createName !== null ? (
+        <QuickCreatePartyModal
+          kind="supplier"
+          initialName={createName}
+          onCreated={(party) => {
+            setExtraSuppliers((prev) => [party, ...prev]);
+            setSupplierId(party.id);
+            setCreateName(null);
+          }}
+          onClose={() => setCreateName(null)}
+        />
+      ) : null}
+    </>
   );
 }
